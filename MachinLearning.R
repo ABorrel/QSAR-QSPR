@@ -152,7 +152,6 @@ PCRCV = function(lfolds, nbcomp, dcluster, prout){
   tperf = cbind(vpred, vreal)
   
   #write.table(tperf, paste(prout, "perfPCRRegCV_", length(lfolds), ".txt", sep = ""), sep = "\t")
-  
   print("Perfomances in CV")
   print(paste("R2=", R2cp, sep = ""))
   print(paste("R02=", R02cp, sep = ""))
@@ -161,6 +160,13 @@ PCRCV = function(lfolds, nbcomp, dcluster, prout){
   print(paste("RMSEP=", rmsepcp, sep = ""))
   print("")
   print("")
+  
+  perf = list()
+  lscore = c(R2cp, R02cp, MAEcp, corpred, rmsepcp)
+  names(lscore) = c("R2", "R02", "MAE", "r", "RMSEP")
+  perf$CV = lscore
+  
+  return(perf)
 }
   
 # PCR - real #
@@ -210,6 +216,16 @@ PCRTrainTest = function(dtrain, dtest, dcluster, nbcp){
   print("")
   print("")
   
+  perftrain = c(R2train, R02train, MAEtrain, cortrain, rmseptrain)
+  names(perftrain) = c("R2", "R02", "MAE", "r", "RMSEP")
+  
+  perftest = c(R2test, R02test, MAEtest, cortest, rmseptest)
+  names(perftest) = c("R2", "R02", "MAE", "r", "RMSEP")
+  
+  perf = list()
+  perf$train = perftrain
+  perf$test = perftest
+  perf$model = modelpcr
   
   # train
   plot(dtrain[,"Aff"], predpcrtrain, pch = 20, main = paste("Correlation = ", round(cor(dtrain[,"Aff"], predpcrtrain), digits = 3)), cex = 2)
@@ -238,8 +254,7 @@ PCRTrainTest = function(dtrain, dtest, dcluster, nbcp){
   abline(a = 0, b = 1, col = "red", cex = 3)
   dev.off()
   
-  return(modelpcr)
-  
+  return(perf)
 }
 
 
@@ -336,8 +351,13 @@ PLSCV = function(lfolds, dcluster, prout){
   print("")
   print("")
   
-  return (nbCPoptimun)
+  perf = list()
+  lscore = c(vcpR2[nbCPoptimun], vcpR02[nbCPoptimun], vcpMAE[nbCPoptimun], vcpcor[nbCPoptimun], vcpRMSEP[nbCPoptimun])
+  names(lscore) = c("R2", "R02", "MAE", "r", "RMSEP")
+  perf$CV = lscore
+  perf$nbcp = nbCPoptimun
   
+  return (perf)
 }
 
 # PLS - real #
@@ -384,6 +404,17 @@ PLSTrainTest = function(dtrain, dtest, dcluster, nbcp){
   print("")
   print("")
   
+  perftrain = c(r2train, R02train, MAEtrain, cortrain, rmseptrain)
+  names(perftrain) = c("R2", "R02", "MAE", "r", "RMSEP")
+  
+  perftest = c(r2test, R02test, MAEtest, cortest, rmseptest)
+  names(perftest) = c("R2", "R02", "MAE", "r", "RMSEP")
+  
+  perf = list()
+  perf$train = perftrain
+  perf$test = perftest
+  perf$model = modelpls
+  
   
   # train
   pdf(paste(prout ,"PerfPLSreg_TrainTest.pdf", sep = ""), width = 20, height = 20)
@@ -413,7 +444,7 @@ PLSTrainTest = function(dtrain, dtest, dcluster, nbcp){
   abline(a = 0, b = 1, col = "red", cex = 3)
   dev.off()
   
-  return(modelpls)
+  return(perf)
   
 }
 
@@ -476,6 +507,13 @@ SVMRegCV = function(lfolds, vgamma, vcost, dcluster, prout){
   print("")
   print("")
   
+  perf = list()
+  lscore = c(valr2, R02val, MAEval, corval, RMSEP)
+  names(lscore) = c("R2", "R02", "MAE", "r", "RMSEP")
+  perf$CV = lscore
+  perf$nbcp = nbCPoptimun
+  perf$model = modtune$best.model
+  
   
   pdf(paste(prout, "PerfSVMreg_CV", length(lfolds), ".pdf", sep = ""), 20, 20)
   plot(y_real, y_predict, pch = 20, main = paste("Correlation = ", round(cor(y_real, y_predict), digits = 3)), cex = 2)
@@ -494,7 +532,7 @@ SVMRegCV = function(lfolds, vgamma, vcost, dcluster, prout){
   tperf = cbind(y_predict, y_real)
   write.table(tperf, paste(prout, "perfSVMRegCV_", length(lfolds), ".txt", sep = ""), sep = "\t")
   
-  return(modtune$best.model)
+  return(perf)
 }
 
 
@@ -548,6 +586,18 @@ SVMRegTrainTest = function(dtrain, dtest, vgamma, vcost, dcluster, prout){
   print("")
   
   
+  perftrain = c(r2train, R02train, MAEtrain, cortrain, rmseptrain)
+  names(perftrain) = c("R2", "R02", "MAE", "r", "RMSEP")
+  
+  perftest = c(r2test, R02test, MAEtest, cortest, rmseptest)
+  names(perftest) = c("R2", "R02", "MAE", "r", "RMSEP")
+  
+  perf = list()
+  perf$train = perftrain
+  perf$test = perftest
+  perf$model = modelsvm
+  
+  
   # train
   pdf(paste(prout ,"PerfSVMreg_TrainTest.pdf", sep = ""), width = 20, height = 20)
   plot(dtrain[,"Aff"], predsvmtrain, pch = 20, main = paste("Correlation = ", round(cor(dtrain[,"Aff"], predsvmtrain), digits = 3)), cex = 2)
@@ -575,6 +625,8 @@ SVMRegTrainTest = function(dtrain, dtest, vgamma, vcost, dcluster, prout){
   text(dtest[,"Aff"], predsvmtest, labels = dclusterTest, col = dclusterTest)
   abline(a = 0, b = 1, col = "red", cex = 3)
   dev.off()
+  
+  return(perf)
   
 }
 
@@ -692,6 +744,10 @@ NNRegCV = function(lfolds, dcluster, vdecay, vsize, prout){
   print("")
   print("")
   
+  perf = list()
+  lscore = c(valr2, R02val, MAEval, corval, RMSEP)
+  names(lscore) = c("R2", "R02", "MAE", "r", "RMSEP")
+  perf$CV = lscore
   
   pdf(paste(prout, "PerfNNCV", length(lfolds), ".pdf", sep = ""), 20, 20)
   plot(y_real, y_predict, pch = 20, main = paste("Correlation = ", round(cor(y_real, y_predict), digits = 3)), cex = 2)
@@ -709,6 +765,8 @@ NNRegCV = function(lfolds, dcluster, vdecay, vsize, prout){
   
   tperf = cbind(y_predict, y_real)
   write.table(tperf, paste(prout, "perfNNCV_", length(lfolds), ".txt", sep = ""), sep = "\t")
+  
+  return(perf)
 }
 
 
@@ -776,6 +834,16 @@ NNReg = function(dtrain, dtest, dcluster,  vdecay, vsize, prout){
   print("")
   print("")
   
+  perf = list()
+  ltrain = c(r2train, R02train, MAEtrain, cortrain, rmseptrain)
+  names(ltrain) = c("R2", "R02", "MAE", "r", "RMSEP")
+  
+  ltest = c(r2test, R02test, MAEtest, cortest, rmseptest)
+  names(ltest) = c("R2", "R02", "MAE", "r", "RMSEP")
+  
+  perf$train = ltrain
+  perf$test = ltest
+  perf$model = modelNN
   
   # train
   pdf(paste(prout ,"PerfNNreg_TrainTest.pdf", sep = ""), width = 20, height = 20)
@@ -805,6 +873,7 @@ NNReg = function(dtrain, dtest, dcluster,  vdecay, vsize, prout){
   abline(a = 0, b = 1, col = "red", cex = 3)
   dev.off()
   
+  return(perf)
 }
 
 
@@ -1225,6 +1294,10 @@ RFregCV = function(lfolds, ntree, mtry, dcluster, prout){
   print("")
   print("")
   
+  perf = list()
+  lscore = c(valr2, R02val, MAEval, corval, RMSEP)
+  names(lscore) = c("R2", "R02", "MAE", "r", "RMSEP")
+  perf$CV = lscore
   
   # importance descriptors
   Mimportance = apply(timportance, 1, mean)
@@ -1322,6 +1395,9 @@ RFregCV = function(lfolds, ntree, mtry, dcluster, prout){
     ylim (c(4, 12)) 
   print(p)
   ggsave(paste(prout, "PerfRFregname_CV10.png", sep = ""), width = 8,height = 8, dpi = 300)
+
+  return(perf)
+  
 }
 
 RFreg = function (dtrain, dtest, ntree, mtry, dcluster, prout){
@@ -1375,6 +1451,18 @@ RFreg = function (dtrain, dtest, ntree, mtry, dcluster, prout){
   print(paste("RMSEP test=", RMSEPtest, sep = ""))
   print("")
   print("")
+  
+  
+  perf = list()
+  ltrain = c(r2train, R02train, MAEtrain, cortrain, RMSEPtrain)
+  names(ltrain) = c("R2", "R02", "MAE", "r", "RMSEP")
+  perf$train = ltrain
+  
+  ltest = c(r2test, R02test, MAEtest, cortest, RMSEPtest)
+  names(ltest) = c("R2", "R02", "MAE", "r", "RMSEP")
+  perf$test = ltest
+  
+  perf$model = modelRF
   
   
   pdf(paste(prout, "PerfRFreg_TrainTest.pdf", sep = ""), 20, 20)
@@ -1445,7 +1533,7 @@ RFreg = function (dtrain, dtest, ntree, mtry, dcluster, prout){
     ylim (c(4, 12)) 
   #print(p)
   ggsave(paste(prout, "PerfRFregname_Test.png", sep = ""), width = 8,height = 8, dpi = 300)
-  
+  return(perf)
 }
 
 
@@ -1509,6 +1597,10 @@ CARTRegCV = function(lfolds, dcluster, prout){
   print(paste("Cor=", corval, sep = ""))
   print(paste("RMSEP=", RMSEP, sep = ""))
   
+  perf = list()
+  lscore = c(valr2, R02val, MAEval, corval, RMSEP)
+  names(lscore) = c("R2", "R02", "MAE", "r", "RMSEP")
+  perf$CV = lscore
   
   pdf(paste(prout, "PerfCARTReg_CV", length(lfolds), ".pdf", sep = ""), 20, 20)
   plot(y_real, y_predict, pch = 20, main = paste("Correlation = ", round(cor(y_real, y_predict), digits = 3)), cex = 2)
@@ -1529,6 +1621,7 @@ CARTRegCV = function(lfolds, dcluster, prout){
   colnames(dpred) = c("Predict", "Real")
   write.table(dpred, file = paste(prout, "PerfCARTRegCV", length(lfolds), ".txt", sep = ""), sep = "\t")
   
+  return(perf)
 }
 
 
@@ -1582,6 +1675,19 @@ CARTreg = function (dtrain, dtest, dcluster, prout){
   print(paste("cor test=", cortest, sep = ""))
   print(paste("RMSEP test=", RMSEPtest, sep = ""))
   
+  
+  perf = list()
+  ltrain = c(r2train, R02train, MAEtrain, cortrain, RMSEPtrain)
+  names(ltrain) = c("R2", "R02", "MAE", "r", "RMSEP")
+  perf$train = ltrain
+  
+  ltest = c(r2test, R02test, MAEtest, cortest, RMSEPtest)
+  names(ltest) = c("R2", "R02", "MAE", "r", "RMSEP")
+  perf$test = ltest
+  
+  perf$model = modelCART
+  
+  
   pdf(paste(prout, "PerfCARTreg_TrainTest.pdf", sep = ""), 20, 20)
   
   # train
@@ -1612,6 +1718,8 @@ CARTreg = function (dtrain, dtest, dcluster, prout){
   abline(a = 0, b = 1, col = "red", cex = 3)
   
   dev.off() 
+  
+  return(perf)
   
 }
 

@@ -6,11 +6,12 @@ source("dataManager.R")
 
 library(chemmodlab)
 library (rpart)
+
+
+
 ################
 #     MAIN     #
 ################
-
-
 args <- commandArgs(TRUE)
 ptrain = args[1]
 ptest = args[2]
@@ -19,13 +20,11 @@ prout = args[4]
 nbCV = as.integer(args[5])
 
 
-
 # to test
 #ptrain = "/home/borrela2/imatinib/results/analysis/QSARs/Lig2D/trainSet.csv"
 #ptest = "/home/borrela2/imatinib/results/analysis/QSARs/Lig2D/testSet.csv"
 #pcluster = "0"
 #prout = "/home/borrela2/imatinib/results/analysis/QSARs/Lig2D/"
-
 # cross validation 10
 #nbCV = 10
 
@@ -117,16 +116,17 @@ print("**************************")
 
 if (modelPCRreg == 1){
   nbCp = PCRgridCV(lgroupCV, prout)
-  PCRCV(lgroupCV, nbCp, dcluster, prout)
-  PCRTrainTest(dtrain, dtest, dcluster, nbCp)
+  outPCRCV = PCRCV(lgroupCV, nbCp, dcluster, prout)
+  outPCR = PCRTrainTest(dtrain, dtest, dcluster, nbCp)
 }
 
 ### PLS  ####
 #############
 
 if (modelPLSreg == 1){
-  nbcp = PLSCV(lgroupCV, dcluster, prout)
-  PLSTrainTest(dtrain, dtest, dcluster, nbcp)
+  outPLSCV = PLSCV(lgroupCV, dcluster, prout)
+  #have to finish
+  outPLS = PLSTrainTest(dtrain, dtest, dcluster, outPLSCV$nbcp)
 }
 
 ### SVM ###
@@ -135,8 +135,8 @@ if (modelPLSreg == 1){
 if(modelSVMreg == 1){
   vgamma = 2^(-1:1)
   vcost = 2^(2:8)
-  modelSVM = SVMRegCV(lgroupCV, vgamma, vcost, dcluster, prout)
-  SVMRegTrainTest(dtrain, dtest, vgamma, vcost, dcluster, prout)
+  outSVMCV = SVMRegCV(lgroupCV, vgamma, vcost, dcluster, prout)
+  outSVM = SVMRegTrainTest(dtrain, dtest, vgamma, vcost, dcluster, prout)
 }
 
 ######
@@ -149,8 +149,8 @@ if (modelRFreg == 1){
   
   #RFregCV(lgroupCV, 50, 5, dcluster, prout)# for test
   parameters = RFGridRegCV(vntree, vmtry, lgroupCV,  prout)
-  RFregCV(lgroupCV, parameters[[1]], parameters[[2]], dcluster, prout)
-  RFreg(dtrain, dtest, parameters[[1]], parameters[[2]], dcluster, prout)
+  outRFCV = RFregCV(lgroupCV, parameters[[1]], parameters[[2]], dcluster, prout)
+  outRF = RFreg(dtrain, dtest, parameters[[1]], parameters[[2]], dcluster, prout)
 }
 
 
@@ -160,8 +160,8 @@ if (modelRFreg == 1){
 ############
 
 if(modelCartreg == 1){
-  CARTRegCV(lgroupCV, dcluster, prout)
-  CARTreg(dtrain, dtest, dcluster, prout)
+  outCARTCV = CARTRegCV(lgroupCV, dcluster, prout)
+  outCART = CARTreg(dtrain, dtest, dcluster, prout)
 }
 
 
@@ -192,22 +192,30 @@ if(modelNNreg ==1){
   vdecay = c(1e-6, 1e-4, 1e-2, 1e-1, 1)
   #vsize = c(1,2)
   #vdecay = c(1e-6, 1e-4)
-  NNRegCV(lgroupCV, dcluster, vdecay, vsize, prout)
-  NNReg(dtrain, dtest, dcluster,vdecay, vsize, prout)
+  outNNCV = NNRegCV(lgroupCV, dcluster, vdecay, vsize, prout)
+  outNN = NNReg(dtrain, dtest, dcluster,vdecay, vsize, prout)
 }
-
-
 
 
 ####################
 #  DEEP LEARNING   #
 ####################
 
+# treated with keras in python
 
-if(modelDLreg ==1){
-  #DLRegCV(lgroupCV, dcluster, prout)
-  DLReg(dtrain, dtest, dcluster, prout)
-}
+#if(modelDLreg ==1){
+#  #DLRegCV(lgroupCV, dcluster, prout)
+#  DLReg(dtrain, dtest, dcluster, prout)
+#}
+
+
+#############################
+# merge table of perfomance #
+#############################
+
+##########################
+# create an env session  #
+##########################
 
 
 
