@@ -1,12 +1,39 @@
-
+library(ggplot2)
 
 
 #####################
 # Perf for classes  #
 #####################
 
+# draw ROC
+drawROCCurve = function(vreal, vpred, pout){
+  
+  dROC = NULL
+  for(i in seq(0,1,0.05)){
+    vpredROC = vpred
+    vpredROC[which(vpred < i)] = 0
+    vpredROC[which(vpred >= i)] = 1
+    
+    vperf = classPerf(vreal, vpredROC)
+    dROC = rbind(dROC, c(i, vperf[[2]], 1 - vperf[[3]]))
+  }
+  colnames(dROC) = c("Sep", "Sensitivity", "Specificity")
+  
+  dROC = as.data.frame(dROC)
+  
+  p = ggplot(data = dROC, 
+         aes(x = 1-Specificity, y = Sensitivity )) +
+    geom_point()
+  
+  ggsave(paste(pout, ".png", sep = ""), width = 10, height = 10, dpi = 300)  
+  
+}
+
+
+
+
 # change case of d or nd
-perftable = function (list_predict, list_real){
+perftable = function (list_predict, list_real, verbose = 0){
   
   nb_value = length (list_real)
   i = 1
@@ -30,11 +57,12 @@ perftable = function (list_predict, list_real){
     }
     i = i + 1
   }
-  #print (paste ("TP : ", tp, sep = ""))
-  #print (paste ("TN : ", tn, sep = ""))
-  #print (paste ("FP : ", fp, sep = ""))
-  #print (paste ("FN : ", fn, sep = ""))
-  
+  if(verbose == 1){
+    print (paste ("TP : ", tp, sep = ""))
+    print (paste ("TN : ", tn, sep = ""))
+    print (paste ("FP : ", fp, sep = ""))
+    print (paste ("FN : ", fn, sep = ""))
+  }
   tableval = c(tp,tn,fp,fn)
   return (tableval)
 }

@@ -1959,3 +1959,70 @@ CARTClassCV = function(lfolds, prout){
   
 }
 
+
+
+CARTclass = function (dtrain, dtest, prout){
+  
+  print("== CART in train/test ==")
+  
+  # model and apply
+  modelCART = rpart( Aff~., data = dtrain, method = "class")
+  vpredtrain = predict(modelCART, dtrain)
+  vpredtest = predict(modelCART, dtest)
+  
+  #print(vpredtest)
+  
+  # draw tree
+  pdf(paste(prout, "TreeCARTClass-TrainTest.pdf",sep = ""))
+  plotcp(modelCART)
+  # plot tree in pdf
+  rpart.plot( modelCART , # middle graph
+              extra=104, box.palette="GnBu",
+              branch.lty=3, shadow.col="gray", nn=TRUE)
+  dev.off()
+  
+  
+  #result
+  vpredtrain = vpredtrain[,1]
+  vprobatrain = vpredtrain
+  
+  vpredtest = vpredtest[,1]
+  vprobatest = vpredtest
+  
+  vrealtrain = dtrain[,c("Aff")]
+  vrealtest = dtest[,c("Aff")]
+
+  # ROC curve
+  drawROCCurve(vrealtrain, vprobatrain, paste(prout, "ROCcurvetrain", sep = ""))
+  drawROCCurve(vrealtest, vprobatest, paste(prout, "ROCcurvetest", sep = ""))
+  
+  
+  # format pred
+  vprobatrain[which(vprobatrain < 0.5)] = 0
+  vprobatrain[which(vprobatrain >= 0.5)] = 1
+  vprobatest[which(vprobatest < 0.5)] = 0
+  vprobatest[which(vprobatest >= 0.5)] = 1
+
+  # performances
+  lpreftrain = classPerf(vrealtrain, vprobatrain)
+  lpreftest = classPerf(vrealtest, vprobatest)
+  
+  print("==Perfomances in train/test==")
+  print("===Perfomances in train===")
+  print(paste("acc=", lpreftrain[[1]], sep = ""))
+  print(paste("se=", lpreftrain[[2]], sep = ""))
+  print(paste("sp=", lpreftrain[[3]], sep = ""))
+  print(paste("mcc=", lpreftrain[[4]], sep = ""))
+  print("")
+  print("===Perfomances in test===")
+  print(paste("acc=", lpreftest[[1]], sep = ""))
+  print(paste("se=", lpreftest[[2]], sep = ""))
+  print(paste("sp=", lpreftest[[3]], sep = ""))
+  print(paste("mcc=", lpreftest[[4]], sep = ""))
+  print("")
+  print("")
+  
+}
+
+
+

@@ -113,12 +113,12 @@ print("*****  CLASSIFICATION   *****")
 print("*****************************")
 
 
-
 ############
 #   CART   #
 ############
 
 if(modelCartclass == 1){
-  CARTClassCV (lgroupCV, prout)
+  CARTclass(dtrain, dtest, prout)
+  CARTClassCV(lgroupCV, prout)
 }
 
