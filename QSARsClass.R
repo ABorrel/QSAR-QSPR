@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 source ("tool.R")
-source("MachinLearning.R")
+source("MLClassification.R")
 source("performance.R")
 source("dataManager.R")
 
@@ -56,13 +56,10 @@ print("")
 
 print("=====Machine learning=====")
 print("---Classification model----")
-print(paste("PCR: ", modelPCRclass, sep = ""))
-print(paste("PLS: ", modelPLSclass, sep = ""))
 print(paste("SVM: ", modelSVMclass, sep = ""))
 print(paste("CART: ", modelCartclass, sep = ""))
 print(paste("RF: ", modelRFclass, sep = ""))
 print(paste("NN: ", modelNNclass, sep = ""))
-print(paste("DP: ", modelDLclass, sep = ""))
 print(paste("Chemmodlab: ", chemmodlabclass, sep = ""))
 print("")
 
@@ -112,13 +109,43 @@ print("*****************************")
 print("*****  CLASSIFICATION   *****")
 print("*****************************")
 
-
 ############
 #   CART   #
 ############
 
 if(modelCartclass == 1){
-  CARTclass(dtrain, dtest, prout)
-  CARTClassCV(lgroupCV, prout)
+  prCART = paste(prout, "CARTclass/", sep = "")
+  dir.create(prCART)
+  outCART = CARTclass(dtrain, dtest, prCART)
+  outCARTCV = CARTClassCV(lgroupCV, prCART)
 }
+
+
+#############################
+# merge table of perfomance #
+#############################
+
+perfCV = NULL
+perftrain = NULL
+perfTest = NULL
+rownameTable = NULL
+
+if(modelCartclass==1){
+  perfCV = rbind(perfCV, outCARTCV$CV)
+  perftrain = rbind(perftrain, outCART$train)
+  perfTest = rbind(perfTest, outCART$test)
+  rownameTable = append(rownameTable, "CART")
+}
+
+rownames(perfTest) = rownameTable
+rownames(perftrain) = rownameTable
+rownames(perfCV) = rownameTable
+
+colnames(perfTest) = c("Acc", "Se", "Sp", "MCC")
+colnames(perftrain) = c("Acc", "Se", "Sp", "MCC")
+colnames(perfCV) = c("Acc", "Se", "Sp", "MCC")
+
+write.csv(perfTest, file = paste(prout, "perfTest.csv", sep = ""))
+write.csv(perftrain, file = paste(prout, "perfTrain.csv", sep = ""))
+write.csv(perfCV, file = paste(prout, "perfCV.csv", sep = ""))
 

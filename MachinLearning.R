@@ -170,7 +170,7 @@ PCRCV = function(lfolds, nbcomp, dcluster, prout){
 }
   
 # PCR - real #
-PCRTrainTest = function(dtrain, dtest, dcluster, nbcp){
+PCRTrainTest = function(dtrain, dtest, dcluster, nbcp, prout){
   
   modelpcr = pcr(Aff~., data=dtrain, ncomp = nbcp)
   predpcrtest = predict(modelpcr, ncomp = nbcp, newdata = dtest)
@@ -222,10 +222,12 @@ PCRTrainTest = function(dtrain, dtest, dcluster, nbcp){
   perftest = c(R2test, R02test, MAEtest, cortest, rmseptest)
   names(perftest) = c("R2", "R02", "MAE", "r", "RMSEP")
   
-  perf = list()
-  perf$train = perftrain
-  perf$test = perftest
-  perf$model = modelpcr
+  outmodel = list()
+  outmodel$train = perftrain
+  outmodel$test = perftest
+  outmodel$model = modelpcr
+  
+  save(outmodel, file = paste(prout, "model.RData", sep = ""))
   
   # train
   plot(dtrain[,"Aff"], predpcrtrain, pch = 20, main = paste("Correlation = ", round(cor(dtrain[,"Aff"], predpcrtrain), digits = 3)), cex = 2)
@@ -254,7 +256,7 @@ PCRTrainTest = function(dtrain, dtest, dcluster, nbcp){
   abline(a = 0, b = 1, col = "red", cex = 3)
   dev.off()
   
-  return(perf)
+  return(outmodel)
 }
 
 
@@ -361,7 +363,7 @@ PLSCV = function(lfolds, dcluster, prout){
 }
 
 # PLS - real #
-PLSTrainTest = function(dtrain, dtest, dcluster, nbcp){
+PLSTrainTest = function(dtrain, dtest, dcluster, nbcp, prout){
   
   modelpls = plsr(Aff~., data=dtrain, ncomp = nbcp)
   predplstest = predict(modelpls, ncomp = nbcp, newdata = dtest)
@@ -410,11 +412,12 @@ PLSTrainTest = function(dtrain, dtest, dcluster, nbcp){
   perftest = c(r2test, R02test, MAEtest, cortest, rmseptest)
   names(perftest) = c("R2", "R02", "MAE", "r", "RMSEP")
   
-  perf = list()
-  perf$train = perftrain
-  perf$test = perftest
-  perf$model = modelpls
+  outmodel = list()
+  outmodel$train = perftrain
+  outmodel$test = perftest
+  outmodel$model = modelpls
   
+  save(outmodel, file = paste(prout, "model.RData", sep = ""))
   
   # train
   pdf(paste(prout ,"PerfPLSreg_TrainTest.pdf", sep = ""), width = 20, height = 20)
@@ -444,8 +447,7 @@ PLSTrainTest = function(dtrain, dtest, dcluster, nbcp){
   abline(a = 0, b = 1, col = "red", cex = 3)
   dev.off()
   
-  return(perf)
-  
+  return(outmodel)
 }
 
 
@@ -511,7 +513,6 @@ SVMRegCV = function(lfolds, vgamma, vcost, dcluster, prout){
   lscore = c(valr2, R02val, MAEval, corval, RMSEP)
   names(lscore) = c("R2", "R02", "MAE", "r", "RMSEP")
   perf$CV = lscore
-  perf$nbcp = nbCPoptimun
   perf$model = modtune$best.model
   
   
@@ -592,11 +593,12 @@ SVMRegTrainTest = function(dtrain, dtest, vgamma, vcost, dcluster, prout){
   perftest = c(r2test, R02test, MAEtest, cortest, rmseptest)
   names(perftest) = c("R2", "R02", "MAE", "r", "RMSEP")
   
-  perf = list()
-  perf$train = perftrain
-  perf$test = perftest
-  perf$model = modelsvm
+  outmodel = list()
+  outmodel$train = perftrain
+  outmodel$test = perftest
+  outmodel$model = modelsvm
   
+  save(outmodel, file = paste(prout, "model.RData", sep = ""))
   
   # train
   pdf(paste(prout ,"PerfSVMreg_TrainTest.pdf", sep = ""), width = 20, height = 20)
@@ -626,8 +628,7 @@ SVMRegTrainTest = function(dtrain, dtest, vgamma, vcost, dcluster, prout){
   abline(a = 0, b = 1, col = "red", cex = 3)
   dev.off()
   
-  return(perf)
-  
+  return(outmodel)
 }
 
 
@@ -834,16 +835,18 @@ NNReg = function(dtrain, dtest, dcluster,  vdecay, vsize, prout){
   print("")
   print("")
   
-  perf = list()
+  outmodel = list()
   ltrain = c(r2train, R02train, MAEtrain, cortrain, rmseptrain)
   names(ltrain) = c("R2", "R02", "MAE", "r", "RMSEP")
   
   ltest = c(r2test, R02test, MAEtest, cortest, rmseptest)
   names(ltest) = c("R2", "R02", "MAE", "r", "RMSEP")
   
-  perf$train = ltrain
-  perf$test = ltest
-  perf$model = modelNN
+  outmodel$train = ltrain
+  outmodel$test = ltest
+  outmodel$model = modelNN
+  
+  save(outmodel, file = paste(prout, "model.RData", sep = ""))
   
   # train
   pdf(paste(prout ,"PerfNNreg_TrainTest.pdf", sep = ""), width = 20, height = 20)
@@ -873,7 +876,7 @@ NNReg = function(dtrain, dtest, dcluster,  vdecay, vsize, prout){
   abline(a = 0, b = 1, col = "red", cex = 3)
   dev.off()
   
-  return(perf)
+  return(outmodel)
 }
 
 
@@ -922,7 +925,7 @@ NNRegOptimizeGrid = function(dtrain, pfig, vdecay, vsize, nbCV){
       optsize = NULL
       for(i in vsize){
         #2000
-        modelNN = nnet(ddestrain, Aff, size = i, linout = T, maxit = 2000, MaxNWts = i*(dim(ddestrain)[2]+1)+i+1, decay = d)
+        modelNN = nnet(ddestrain, Aff, size = i, linout = T, maxit = 200, MaxNWts = i*(dim(ddestrain)[2]+1)+i+1, decay = d)
         vpred = predict (modelNN, ddesctest)
         valr2 = calR2(dtestAff, vpred)
         if (valr2 < 0){
@@ -952,7 +955,7 @@ NNRegOptimizeGrid = function(dtrain, pfig, vdecay, vsize, nbCV){
     bestdecay = as.double(colnames(gridOptimize)[idecaybest])
     
     # best model
-    modelNN = nnet(ddestrain, Aff, size = bestsize, linout = T,  maxit = 2000, MaxNWts = bestsize*(dim(ddestrain)[2]+1)+bestsize+1, decay = bestdecay)
+    modelNN = nnet(ddestrain, Aff, size = bestsize, linout = T,  maxit = 200, MaxNWts = bestsize*(dim(ddestrain)[2]+1)+bestsize+1, decay = bestdecay)
     vpred = predict(modelNN, ddesctest)
     R2 = calR2(dtestAff, vpred)
     lR2best = append(lR2best, R2)
@@ -1453,17 +1456,18 @@ RFreg = function (dtrain, dtest, ntree, mtry, dcluster, prout){
   print("")
   
   
-  perf = list()
+  outmodel = list()
   ltrain = c(r2train, R02train, MAEtrain, cortrain, RMSEPtrain)
   names(ltrain) = c("R2", "R02", "MAE", "r", "RMSEP")
-  perf$train = ltrain
+  outmodel$train = ltrain
   
   ltest = c(r2test, R02test, MAEtest, cortest, RMSEPtest)
   names(ltest) = c("R2", "R02", "MAE", "r", "RMSEP")
-  perf$test = ltest
+  outmodel$test = ltest
   
-  perf$model = modelRF
+  outmodel$model = modelRF
   
+  save(outmodel, file = paste(prout, "model.RData", sep = ""))
   
   pdf(paste(prout, "PerfRFreg_TrainTest.pdf", sep = ""), 20, 20)
   plot(modelRF)
@@ -1533,7 +1537,7 @@ RFreg = function (dtrain, dtest, ntree, mtry, dcluster, prout){
     ylim (c(4, 12)) 
   #print(p)
   ggsave(paste(prout, "PerfRFregname_Test.png", sep = ""), width = 8,height = 8, dpi = 300)
-  return(perf)
+  return(outmodel)
 }
 
 
@@ -1676,17 +1680,17 @@ CARTreg = function (dtrain, dtest, dcluster, prout){
   print(paste("RMSEP test=", RMSEPtest, sep = ""))
   
   
-  perf = list()
+  outmodel = list()
   ltrain = c(r2train, R02train, MAEtrain, cortrain, RMSEPtrain)
   names(ltrain) = c("R2", "R02", "MAE", "r", "RMSEP")
-  perf$train = ltrain
+  outmodel$train = ltrain
   
   ltest = c(r2test, R02test, MAEtest, cortest, RMSEPtest)
   names(ltest) = c("R2", "R02", "MAE", "r", "RMSEP")
-  perf$test = ltest
+  outmodel$test = ltest
+  outmodel$model = modelCART
   
-  perf$model = modelCART
-  
+  save(outmodel, file = paste(prout, "model.RData", sep = ""))
   
   pdf(paste(prout, "PerfCARTreg_TrainTest.pdf", sep = ""), 20, 20)
   
@@ -1719,418 +1723,6 @@ CARTreg = function (dtrain, dtest, dcluster, prout){
   
   dev.off() 
   
-  return(perf)
+  return(outmodel)
   
 }
-
-
-
-
-######################################################################################################################################
-######################################################################################################################################
-
-
-#####################
-#  classification   #
-#####################
-
-##########
-#  SVM   #
-##########
-
-SVMClassCV = function(lfolds, vgamma, vcost, prout){
-  
-  print(paste("== SVM in CV with ", length(lfolds), " Automatic optimization by folds", sep = ""))
-  
-  # data combination
-  k = 1
-  kmax = length(lfolds)
-  y_predict = NULL
-  y_real = NULL
-  y_proba = NULL
-  while(k <= kmax){
-    dtrain = NULL
-    dtest = NULL
-    for (m in seq(1:kmax)){
-      if (m == k){
-        dtest = lfolds[[m]]
-      }else{
-        dtrain = rbind(dtrain, lfolds[[m]])
-      }
-    }
-    
-    modtune = tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost), tunecontrol = tune.control(sampling = "fix"))
-    
-    vpred = predict (modtune$best.model, dtest, type = "class")
-    y_proba = append(y_proba, vpred)
-    
-    vpred[which(vpred < 0.5)] = 0
-    vpred[which(vpred >= 0.5)] = 1
-    
-    y_predict = append(y_predict, vpred)
-    y_real = append(y_real, dtest[,"Aff"])
-    k = k + 1
-  }
-  
-  # performances
-  lpref = classPerf(y_real, y_predict)
-  acc = lpref[[1]]
-  se = lpref[[2]]
-  sp = lpref[[3]]
-  mcc = lpref[[4]]
-  
-  png(paste(prout, "PerfSVMClassCV", length(lfolds), ".png", sep = ""), 800, 800)
-  plot(y_real, y_proba, type = "n")
-  text(y_real, y_proba, labels = names(y_predict), cex = 0.8)
-  abline(a = 0.5, b = 0, col = "red", cex = 3)
-  dev.off()
-  
-  dpred = cbind(y_proba, y_real)
-  colnames(dpred) = c("Predict", "Real")
-  write.table(dpred, file = paste(prout, "PerfRFClassCV", length(lfolds), ".txt", sep = ""), sep = "\t")
-  
-  print("Perfomances in CV")
-  print(paste("acc=", acc, sep = ""))
-  print(paste("se=", se, sep = ""))
-  print(paste("sp=", sp, sep = ""))
-  print(paste("mcc=", mcc, sep = "")) 
-  
-  tperf = cbind(y_predict, y_real)
-  write.table(tperf, paste(prout, "perfSVMRegCV_", length(lfolds), ".txt", sep = ""), sep = "\t")
-}
-
-
-
-
-#####################
-#  Random forest    #
-#####################
-
-RFGridClassCV = function(lntree, lmtry, lfolds, prout){
-  
-  gridOpt = data.frame ()
-  i = 0
-  for (ntree in lntree){
-    i = i + 1
-    j = 0
-    for (mtry in lmtry){
-      j = j + 1
-      
-      # data combination
-      k = 1
-      kmax = length(lfolds)
-      y_predict = NULL
-      y_real = NULL
-      while(k <= kmax){
-        dtrain = NULL
-        dtest = NULL
-        for (m in seq(1:kmax)){
-          if (m == k){
-            dtest = lfolds[[m]]
-          }else{
-            dtrain = rbind(dtrain, lfolds[[m]])
-          }
-        }
-        
-        modelRF = randomForest( Aff~., data = dtrain, mtry=mtry, ntree = ntree, type = "class",  importance=TRUE)
-        vpred = predict (modelRF, dtest)
-        vpred[which(vpred < 0.5)] = 0
-        vpred[which(vpred >= 0.5)] = 1
-        
-        y_predict = append(y_predict, vpred)
-        y_real = append(y_real, dtest[,"Aff"])
-        k = k + 1
-      }
-      
-      
-      # R2 for grid
-      #print(y_predict)
-      l_perf = classPerf(y_real, y_predict)
-      gridOpt[i,j] = l_perf[[4]]
-      
-      # R conversion 
-    }
-  }
-  colnames (gridOpt) = lmtry
-  rownames (gridOpt) = lntree
-  
-  write.table (gridOpt, paste(prout, "RFclassMCC.grid", sep = ""))
-  print(which(gridOpt == max(gridOpt), arr.ind = TRUE))
-  
-  print(paste("=== RF grid optimisation in CV = ", length(lfolds), " ntree = ", rownames (gridOpt)[which(gridOpt==max(gridOpt), arr.ind=T)[1]], " mtry=", colnames (gridOpt)[which(gridOpt==max(gridOpt), arr.ind=T)[2]], sep = ""))
-  return (list(rownames (gridOpt)[which(gridOpt==max(gridOpt), arr.ind=T)[1]],colnames (gridOpt)[which(gridOpt==max(gridOpt), arr.ind=T)[2]] ))
-}
-
-RFClassCV = function(lfolds, ntree, mtry, prout){
-  
-  print(paste("== RF in CV with ", length(lfolds), " folds ntree = ", ntree, " mtry = ", mtry, sep = ""))
-  
-  # data combination
-  k = 1
-  kmax = length(lfolds)
-  y_predict = NULL
-  y_real = NULL
-  timportance = NULL
-  y_proba = NULL
-  while(k <= kmax){
-    dtrain = NULL
-    dtest = NULL
-    for (m in seq(1:kmax)){
-      if (m == k){
-        dtest = lfolds[[m]]
-      }else{
-        dtrain = rbind(dtrain, lfolds[[m]])
-      }
-    }
-    
-    modelRF = randomForest( Aff~., data = dtrain, mtry=as.integer(mtry), ntree=as.integer(ntree), type = "class",  importance=TRUE)
-    vpred = predict (modelRF, dtest)
-    vproba = vpred
-    vpred[which(vpred < 0.5)] = 0
-    vpred[which(vpred >= 0.5)] = 1
-    
-    timportance = cbind(timportance, modelRF$importance[,1])
-    y_predict = append(y_predict, vpred)
-    y_proba = append(y_proba, vproba)
-    y_real = append(y_real, dtest[,"Aff"])
-    k = k + 1
-  }
-  
-  # performances
-  lpref = classPerf(y_real, y_predict)
-  acc = lpref[[1]]
-  se = lpref[[2]]
-  sp = lpref[[3]]
-  mcc = lpref[[4]]
-  
-  png(paste(prout, "PerfRFClassCV", length(lfolds), ".png", sep = ""), 800, 800)
-  plot(y_real, y_proba, type = "n")
-  text(y_real, y_proba, labels = names(y_predict), cex = 0.8)
-  abline(a = 0.5, b = 0, col = "red", cex = 3)
-  dev.off()
-  
-  dpred = cbind(y_proba, y_real)
-  colnames(dpred) = c("Predict", "Real")
-  write.table(dpred, file = paste(prout, "PerfRFClassCV", length(lfolds), ".txt", sep = ""), sep = "\t")
-  
-  print("Perfomances in CV")
-  print(paste("acc=", acc, sep = ""))
-  print(paste("se=", se, sep = ""))
-  print(paste("sp=", sp, sep = ""))
-  print(paste("mcc=", mcc, sep = ""))
-  
-  # importance descriptors
-  Mimportance = apply(timportance, 1, mean)
-  SDimportance = apply(timportance, 1, sd)
-  
-  dimportance = cbind(Mimportance, SDimportance)
-  rownames(dimportance) = rownames(timportance)
-  dimportance = dimportance[order(dimportance[,1], decreasing = TRUE),]
-  
-  write.table(dimportance, paste(prout, "ImportanceDescClassCV_", length(lfolds), ".txt", sep = ""), sep = "\t")
-  
-  png(paste(prout, "ImportanceRFClassCV_", length(lfolds), ".png", sep = ""), 1000, 800)
-  par( mar=c(10,4,4,4))
-  plot(dimportance[,1], xaxt ="n", xlab="", pch = 19, ylab="M importance")
-  axis(1, 1:length(dimportance[,1]), labels = rownames(dimportance), las = 2, cex.axis = 0.7, cex = 2.75)
-  for (i in 1:(dim(dimportance)[1])){
-    segments(i, dimportance[i,1] - dimportance[i,2], i, dimportance[i,1] + dimportance[i,2])
-  }
-  dev.off()
-  return(y_predict)
-}
-
-
-RFClass = function (dtrain, dtest, ntree, mtry, prout){
-  
-  modelRF = randomForest( Aff~., data = dtrain, mtry=as.integer(mtry), ntree=as.integer(ntree), type = "class",  importance=TRUE)
-  vpredtrain = predict (modelRF, dtrain, type = "class")
-  vpredtest = predict (modelRF, dtest, type = "class")
-  
-  vpredtrainprob = vpredtrain
-  vpredtestprob = vpredtest
-  
-  vpredtest[which(vpredtest < 0.5)] = 0
-  vpredtest[which(vpredtest >= 0.5)] = 1
-  vpredtrain[which(vpredtrain < 0.5)] = 0
-  vpredtrain[which(vpredtrain >= 0.5)] = 1
-  
-  
-  vperftrain = classPerf(dtrain[,c("Aff")], vpredtrain)
-  vperftest = classPerf(dtest[,c("Aff")], vpredtest)
-  
-  print("===Perf RF===")
-  print(paste("Dim train: ", dim(dtrain)[1]," ", dim(dtrain)[2], sep = ""))
-  print(paste("Dim test: ", dim(dtest)[1]," ", dim(dtest)[2], sep = ""))
-  
-  print("==Train==")
-  print(paste("acc=", vperftrain[[1]], sep = ""))
-  print(paste("se=", vperftrain[[2]], sep = ""))
-  print(paste("sp=", vperftrain[[3]], sep = ""))
-  print(paste("mcc=", vperftrain[[4]], sep = ""))
-    
-  
-  print("==Test==")
-  print(paste("acc=", vperftest[[1]], sep = ""))
-  print(paste("se=", vperftest[[2]], sep = ""))
-  print(paste("sp=", vperftest[[3]], sep = ""))
-  print(paste("mcc=", vperftest[[4]], sep = ""))
-  
-
-  png(paste(prout, "PerfTrainTest.png", sep = ""), 1600, 800)
-  par(mfrow = c(1,2))
-  plot(dtrain[,"Aff"], vpredtrainprob, type = "n")
-  text(dtrain[,"Aff"], vpredtrainprob, labels = names(vpredtrainprob))
-  abline(a = 0.5, b = 0, col = "red", cex = 3)
-  
-  plot(dtest[,"Aff"], vpredtest, type = "n")
-  text(dtest[,"Aff"], vpredtestprob, labels = names(vpredtestprob))
-  abline(a = 0.5, b = 0, col = "red", cex = 3)
-  dev.off()
-  write.csv(vpredtestprob, paste(prout,"classTest.csv", sep = ""))
-  
-}
-
-
-
-##########
-#  CART  #
-##########
-
-CARTClassCV = function(lfolds, prout){
-  
-  print(paste("== CART in CV with ", length(lfolds), "==", sep = ""))
-  
-  # data combination
-  k = 1
-  kmax = length(lfolds)
-  y_predict = NULL
-  y_real = NULL
-  y_proba = NULL
-  pdf(paste(prout, "TreeCARTClass-CV", length(lfolds), ".pdf",sep = ""))
-  while(k <= kmax){
-    dtrain = NULL
-    dtest = NULL
-    for (m in seq(1:kmax)){
-      if (m == k){
-        dtest = lfolds[[m]]
-      }else{
-        dtrain = rbind(dtrain, lfolds[[m]])
-      }
-    }
-    
-    modelCART = rpart( Aff~., data = dtrain, method = "class")
-    vpred = predict(modelCART, dtest)
-    vpred = vpred[,2]
-    vproba = vpred
-    vpred[which(vpred < 0.5)] = 0
-    vpred[which(vpred >= 0.5)] = 1
-    
-    plotcp(modelCART)
-    # plot tree in pdf
-    rpart.plot( modelCART , # middle graph
-               extra=104, box.palette="GnBu",
-               branch.lty=3, shadow.col="gray", nn=TRUE)
-    
-    y_predict = append(y_predict, vpred)
-    y_proba = append(y_proba, vproba)
-    y_real = append(y_real, dtest[,"Aff"])
-    
-    k = k + 1
-  }
-  dev.off()
-  
-  # performances
-  lpref = classPerf(y_real, y_predict)
-  acc = lpref[[1]]
-  se = lpref[[2]]
-  sp = lpref[[3]]
-  mcc = lpref[[4]]
-  
-  png(paste(prout, "PerfCARTClassCV", length(lfolds), ".png", sep = ""), 800, 800)
-  plot(y_real, y_proba, type = "n")
-  text(y_real, y_proba, labels = names(y_predict), cex = 0.8)
-  abline(a = 0.5, b = 0, col = "red", cex = 3)
-  dev.off()
-  
-  dpred = cbind(y_proba, y_real)
-  colnames(dpred) = c("Predict", "Real")
-  write.table(dpred, file = paste(prout, "PerfCARTClassCV", length(lfolds), ".txt", sep = ""), sep = "\t")
-  
-  print("Perfomances in CV")
-  print(paste("acc=", acc, sep = ""))
-  print(paste("se=", se, sep = ""))
-  print(paste("sp=", sp, sep = ""))
-  print(paste("mcc=", mcc, sep = ""))
-  print("")
-  print("")
-  
-}
-
-
-
-CARTclass = function (dtrain, dtest, prout){
-  
-  print("== CART in train/test ==")
-  
-  # model and apply
-  modelCART = rpart( Aff~., data = dtrain, method = "class")
-  vpredtrain = predict(modelCART, dtrain)
-  vpredtest = predict(modelCART, dtest)
-  
-  #print(vpredtest)
-  
-  # draw tree
-  pdf(paste(prout, "TreeCARTClass-TrainTest.pdf",sep = ""))
-  plotcp(modelCART)
-  # plot tree in pdf
-  rpart.plot( modelCART , # middle graph
-              extra=104, box.palette="GnBu",
-              branch.lty=3, shadow.col="gray", nn=TRUE)
-  dev.off()
-  
-  
-  #result
-  vpredtrain = vpredtrain[,1]
-  vprobatrain = vpredtrain
-  
-  vpredtest = vpredtest[,1]
-  vprobatest = vpredtest
-  
-  vrealtrain = dtrain[,c("Aff")]
-  vrealtest = dtest[,c("Aff")]
-
-  # ROC curve
-  drawROCCurve(vrealtrain, vprobatrain, paste(prout, "ROCcurvetrain", sep = ""))
-  drawROCCurve(vrealtest, vprobatest, paste(prout, "ROCcurvetest", sep = ""))
-  
-  
-  # format pred
-  vprobatrain[which(vprobatrain < 0.5)] = 0
-  vprobatrain[which(vprobatrain >= 0.5)] = 1
-  vprobatest[which(vprobatest < 0.5)] = 0
-  vprobatest[which(vprobatest >= 0.5)] = 1
-
-  # performances
-  lpreftrain = classPerf(vrealtrain, vprobatrain)
-  lpreftest = classPerf(vrealtest, vprobatest)
-  
-  print("==Perfomances in train/test==")
-  print("===Perfomances in train===")
-  print(paste("acc=", lpreftrain[[1]], sep = ""))
-  print(paste("se=", lpreftrain[[2]], sep = ""))
-  print(paste("sp=", lpreftrain[[3]], sep = ""))
-  print(paste("mcc=", lpreftrain[[4]], sep = ""))
-  print("")
-  print("===Perfomances in test===")
-  print(paste("acc=", lpreftest[[1]], sep = ""))
-  print(paste("se=", lpreftest[[2]], sep = ""))
-  print(paste("sp=", lpreftest[[3]], sep = ""))
-  print(paste("mcc=", lpreftest[[4]], sep = ""))
-  print("")
-  print("")
-  
-}
-
-
-

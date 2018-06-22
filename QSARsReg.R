@@ -31,13 +31,13 @@ nbCV = as.integer(args[5])
 
 # model regression #
 ####################
-modelPCRreg = 1 
-modelPLSreg = 1
+modelPCRreg = 0 
+modelPLSreg = 0
 modelSVMreg = 0
-modelRFreg = 1
-modelCartreg = 1
-modelNNreg = 0
-modelDLreg = 0
+modelRFreg = 0
+modelCartreg = 0
+modelNNreg = 1
+modelDLreg = 0 #old creation of DNN using R
 chemmodlabreg = 0
 
 
@@ -115,28 +115,34 @@ print("**************************")
 ############
 
 if (modelPCRreg == 1){
-  nbCp = PCRgridCV(lgroupCV, prout)
-  outPCRCV = PCRCV(lgroupCV, nbCp, dcluster, prout)
-  outPCR = PCRTrainTest(dtrain, dtest, dcluster, nbCp)
+  proutPCR = paste(prout, "PCRreg/", sep = "")
+  dir.create(proutPCR)
+  nbCp = PCRgridCV(lgroupCV, proutPCR)
+  outPCRCV = PCRCV(lgroupCV, nbCp, dcluster, proutPCR)
+  outPCR = PCRTrainTest(dtrain, dtest, dcluster, nbCp, proutPCR)
 }
 
 ### PLS  ####
 #############
 
 if (modelPLSreg == 1){
-  outPLSCV = PLSCV(lgroupCV, dcluster, prout)
+  proutPLS = paste(prout, "PLSreg/", sep = "")
+  dir.create(proutPLS)
+  outPLSCV = PLSCV(lgroupCV, dcluster, proutPLS)
   #have to finish
-  outPLS = PLSTrainTest(dtrain, dtest, dcluster, outPLSCV$nbcp)
+  outPLS = PLSTrainTest(dtrain, dtest, dcluster, outPLSCV$nbcp, proutPLS)
 }
 
 ### SVM ###
 ###########
 
 if(modelSVMreg == 1){
+  proutSVM = paste(prout, "SVMreg/", sep = "")
+  dir.create(proutSVM)
   vgamma = 2^(-1:1)
   vcost = 2^(2:8)
-  outSVMCV = SVMRegCV(lgroupCV, vgamma, vcost, dcluster, prout)
-  outSVM = SVMRegTrainTest(dtrain, dtest, vgamma, vcost, dcluster, prout)
+  outSVMCV = SVMRegCV(lgroupCV, vgamma, vcost, dcluster, proutSVM)
+  outSVM = SVMRegTrainTest(dtrain, dtest, vgamma, vcost, dcluster, proutSVM)
 }
 
 ######
@@ -144,13 +150,16 @@ if(modelSVMreg == 1){
 ######
 
 if (modelRFreg == 1){
+  proutRF = paste(prout, "RFreg/", sep = "")
+  dir.create(proutRF)
+  
   vntree = c(10,50,100,200,500, 1000)
   vmtry = c(1,2,3,4,5,10,15,20, 25, 30)
   
   #RFregCV(lgroupCV, 50, 5, dcluster, prout)# for test
-  parameters = RFGridRegCV(vntree, vmtry, lgroupCV,  prout)
-  outRFCV = RFregCV(lgroupCV, parameters[[1]], parameters[[2]], dcluster, prout)
-  outRF = RFreg(dtrain, dtest, parameters[[1]], parameters[[2]], dcluster, prout)
+  parameters = RFGridRegCV(vntree, vmtry, lgroupCV,  proutRF)
+  outRFCV = RFregCV(lgroupCV, parameters[[1]], parameters[[2]], dcluster, proutRF)
+  outRF = RFreg(dtrain, dtest, parameters[[1]], parameters[[2]], dcluster, proutRF)
 }
 
 
@@ -160,8 +169,10 @@ if (modelRFreg == 1){
 ############
 
 if(modelCartreg == 1){
-  outCARTCV = CARTRegCV(lgroupCV, dcluster, prout)
-  outCART = CARTreg(dtrain, dtest, dcluster, prout)
+  proutCART = paste(prout, "CARTreg/", sep = "")
+  dir.create(proutCART)
+  outCARTCV = CARTRegCV(lgroupCV, dcluster, proutCART)
+  outCART = CARTreg(dtrain, dtest, dcluster, proutCART)
 }
 
 
@@ -190,10 +201,12 @@ if(chemmodlabreg == 1){
 if(modelNNreg ==1){
   vsize = c(1,2,5,10)
   vdecay = c(1e-6, 1e-4, 1e-2, 1e-1, 1)
+  proutNN = paste(prout, "NNreg/", sep = "")
+  dir.create(proutNN)
   #vsize = c(1,2)
   #vdecay = c(1e-6, 1e-4)
-  outNNCV = NNRegCV(lgroupCV, dcluster, vdecay, vsize, prout)
-  outNN = NNReg(dtrain, dtest, dcluster,vdecay, vsize, prout)
+  outNNCV = NNRegCV(lgroupCV, dcluster, vdecay, vsize, proutNN)
+  outNN = NNReg(dtrain, dtest, dcluster,vdecay, vsize, proutNN)
 }
 
 
@@ -213,11 +226,64 @@ if(modelNNreg ==1){
 # merge table of perfomance #
 #############################
 
-##########################
-# create an env session  #
-##########################
+perfCV = NULL
+perftrain = NULL
+perfTest = NULL
+rownameTable = NULL
 
+if(modelPCRreg==1){
+  perfCV = rbind(perfCV, outPCRCV$CV)
+  perftrain = rbind(perftrain, outPCR$train)
+  perfTest = rbind(perfTest, outPCR$test)
+  rownameTable = append(rownameTable, "PCR")
+}
 
+if(modelPLSreg==1){
+  perfCV = rbind(perfCV, outPLSCV$CV)
+  perftrain = rbind(perftrain, outPLS$train)
+  perfTest = rbind(perfTest, outPLS$test)
+  rownameTable = append(rownameTable, "PLS")
+}
+
+if(modelSVMreg==1){
+  perfCV = rbind(perfCV, outSVMCV$CV)
+  perftrain = rbind(perftrain, outSVM$train)
+  perfTest = rbind(perfTest, outSVM$test)
+  rownameTable = append(rownameTable, "SVM")
+}
+
+if(modelRFreg==1){
+  perfCV = rbind(perfCV, outRFCV$CV)
+  perftrain = rbind(perftrain, outRF$train)
+  perfTest = rbind(perfTest, outRF$test)
+  rownameTable = append(rownameTable, "RF")
+}
+
+if(modelCartreg==1){
+  perfCV = rbind(perfCV, outCARTCV$CV)
+  perftrain = rbind(perftrain, outCART$train)
+  perfTest = rbind(perfTest, outCART$test)
+  rownameTable = append(rownameTable, "CART")
+}
+
+if(modelNNreg==1){
+  perfCV = rbind(perfCV, outNNCV$CV)
+  perftrain = rbind(perftrain, outNN$train)
+  perfTest = rbind(perfTest, outNN$test)
+  rownameTable = append(rownameTable, "NN")
+}
+
+rownames(perfTest) = rownameTable
+rownames(perftrain) = rownameTable
+rownames(perfCV) = rownameTable
+
+colnames(perfTest) = c("R2", "R02", "MAE", "r", "RMSEP")
+colnames(perftrain) = c("R2", "R02", "MAE", "r", "RMSEP")
+colnames(perfCV) = c("R2", "R02", "MAE", "r", "RMSEP")
+
+write.csv(perfTest, file = paste(prout, "perfTest.csv", sep = ""))
+write.csv(perftrain, file = paste(prout, "perfTrain.csv", sep = ""))
+write.csv(perfCV, file = paste(prout, "perfCV.csv", sep = ""))
 
 
 
