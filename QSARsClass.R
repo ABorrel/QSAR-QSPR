@@ -35,8 +35,8 @@ nbCV = as.integer(args[5])
 modelPCRclass = 0 
 modelPLSclass = 0
 modelSVMclass = 0
-modelRFclass = 0
-modelCartclass = 1
+modelRFclass = 1
+modelCartclass = 0
 modelNNclass = 0
 modelDLclass = 0
 chemmodlabclass = 0
@@ -109,9 +109,7 @@ print("*****************************")
 print("*****  CLASSIFICATION   *****")
 print("*****************************")
 
-############
-#   CART   #
-############
+
 
 if(modelCartclass == 1){
   prCART = paste(prout, "CARTclass/", sep = "")
@@ -119,6 +117,33 @@ if(modelCartclass == 1){
   outCART = CARTclass(dtrain, dtest, prCART)
   outCARTCV = CARTClassCV(lgroupCV, prCART)
 }
+
+
+if(modelSVMclass == 1){
+  prSVM = paste(prout, "SVMclass/", sep = "")
+  dir.create(prSVM)
+  vgamma = 2^(-1:1)
+  vcost = 2^(2:8)
+  
+  #outSVMCV = SVMClassCV(lgroupCV, vgamma, vcost, prSVM)
+  outSVM = SVMClassTrainTest(dtrain, dtest, vgamma, vcost, prSVM)
+}
+
+
+
+if(modelRFclass == 1){
+  prRF = paste(prout, "RFclass/", sep = "")
+  dir.create(prRF)
+  vntree = c(10,50,100,200,500, 1000)
+  vmtry = c(1,2,3,4,5,10,15,20, 25, 30)
+  
+  #RFregCV(lgroupCV, 50, 5, dcluster, prout)# for test
+  parameters = RFGridClassCV(vntree, vmtry, lgroupCV,  prRF)
+  outRFCV = RFClassCV(lgroupCV, parameters[[1]], parameters[[2]], prRF)
+  outRF = RFClassTrainTest(dtrain, dtest, parameters[[1]], parameters[[2]], prRF)
+}
+
+
 
 
 #############################
@@ -136,6 +161,23 @@ if(modelCartclass==1){
   perfTest = rbind(perfTest, outCART$test)
   rownameTable = append(rownameTable, "CART")
 }
+
+
+if(modelSVMclass == 1){
+  perfCV = rbind(perfCV, outSVMCV$CV)
+  perftrain = rbind(perftrain, outSVM$train)
+  perfTest = rbind(perfTest, outSVM$test)
+  rownameTable = append(rownameTable, "SVM")
+}
+
+
+if(modelRFclass == 1){
+  perfCV = rbind(perfCV, outRFCV$CV)
+  perftrain = rbind(perftrain, outRF$train)
+  perfTest = rbind(perfTest, outRF$test)
+  rownameTable = append(rownameTable, "RF")
+}
+
 
 rownames(perfTest) = rownameTable
 rownames(perftrain) = rownameTable

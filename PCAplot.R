@@ -15,7 +15,7 @@ generatePCAcoords = function(din){
   colnames (cp) = colnames (dinScale)
   data_plot = as.matrix(dinScale)%*%cp
 
-  return(list(data_plot, var_cap[1]))
+  return(list(data_plot, var_cap))
   
   
 }
