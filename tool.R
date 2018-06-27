@@ -596,43 +596,6 @@ listDescriptorShipshape = function (d.col, l_des){
 }
 
 
-######################
-# Normalization LDA  #
-######################
-
-
-normalizationCoef = function (coef, data_train){
-
-	d_class1 = data_train[which(data_train[,"drugg"]==0),]
-	d_class2 = data_train[which(data_train[,"drugg"]==1),]
-
-	m_class1 = mean (d_class1[,1])
-	m_class2 = mean (d_class2[,1])
-
-	v_c1 =  sum((d_class1[,1]-m_class1) * (d_class1[,1]-m_class1))
-	v_c2 =  sum((d_class2[,1]-m_class2) * (d_class2[,1]-m_class2))
-
-
-	v_out = sqrt((v_c1 + v_c2) / (dim(data_train)[1] - 2))
-
-	return (coef*v_out)
-
-}
-
-
-normalizationScalingLDA = function (scalingLDA, d){
-
-	l_out = NULL
-	l_des = names (scalingLDA)
-
-	for (desc in l_des){
-		l_out = append (l_out, normalizationCoef (scalingLDA[desc], d[,c(desc,"drugg")]))
-	}
-	names (l_out) = names (scalingLDA)
-	return (l_out)
-}
-
-
 
 ###############
 #   Signif    #

@@ -32,13 +32,11 @@ nbCV = as.integer(args[5])
 
 # model classification #
 ########################
-modelPCRclass = 0 
-modelPLSclass = 0
 modelSVMclass = 0
 modelRFclass = 1
-modelCartclass = 0
+modelLDAclass = 1
+modelCartclass = 1
 modelNNclass = 0
-modelDLclass = 0
 chemmodlabclass = 0
 
 
@@ -58,6 +56,7 @@ print("=====Machine learning=====")
 print("---Classification model----")
 print(paste("SVM: ", modelSVMclass, sep = ""))
 print(paste("CART: ", modelCartclass, sep = ""))
+print(paste("LDA: ", modelLDAclass, sep = ""))
 print(paste("RF: ", modelRFclass, sep = ""))
 print(paste("NN: ", modelNNclass, sep = ""))
 print(paste("Chemmodlab: ", chemmodlabclass, sep = ""))
@@ -79,6 +78,9 @@ dtest = read.csv(ptest, header = TRUE)
 rownames(dtest) = dtest[,1]
 dtest = dtest[,-1]
 
+# dglobal for CV
+dglobal = rbind(dtrain, dtest[,colnames(dtrain)])
+
 # cluster
 if (pcluster != "0"){
   dcluster = read.csv(pcluster, header = TRUE)
@@ -99,7 +101,7 @@ print("")
 
 # sampling data for CV #
 ########################
-lgroupCV = samplingDataNgroup(dtrain, nbCV)
+lgroupCV = samplingDataNgroup(dglobal, nbCV)
 controlDatasets(lgroupCV, paste(prout, "ChecksamplingCV", nbCV, sep = ""))
 
 
@@ -124,8 +126,7 @@ if(modelSVMclass == 1){
   dir.create(prSVM)
   vgamma = 2^(-1:1)
   vcost = 2^(2:8)
-  
-  #outSVMCV = SVMClassCV(lgroupCV, vgamma, vcost, prSVM)
+  outSVMCV = SVMClassCV(lgroupCV, vgamma, vcost, prSVM)
   outSVM = SVMClassTrainTest(dtrain, dtest, vgamma, vcost, prSVM)
 }
 
@@ -144,6 +145,12 @@ if(modelRFclass == 1){
 }
 
 
+if(modelLDAclass == 1){
+  prLDA = paste(prout, "LDAclass/", sep = "")
+  dir.create(prLDA)
+  outLDACV = LDAClassCV(lgroupCV, prLDA)
+  outLDA = LDAClassTrainTest(dtrain, dtest, prLDA)
+}
 
 
 #############################
@@ -176,6 +183,13 @@ if(modelRFclass == 1){
   perftrain = rbind(perftrain, outRF$train)
   perfTest = rbind(perfTest, outRF$test)
   rownameTable = append(rownameTable, "RF")
+}
+
+if(modelLDAclass == 1){
+  perfCV = rbind(perfCV, outLDACV$CV)
+  perftrain = rbind(perftrain, outLDA$train)
+  perfTest = rbind(perfTest, outLDA$test)
+  rownameTable = append(rownameTable, "LDA")
 }
 
 
