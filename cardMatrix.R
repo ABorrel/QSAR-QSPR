@@ -1,5 +1,5 @@
 require(graphics)
-source ("tool.R")
+source("~/development/Rglobal/source/dataManager.R")
 
 
 generateColor= function(nb_color){

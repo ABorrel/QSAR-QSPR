@@ -1,6 +1,3 @@
-
-
-
 library(ggplot2)
 source("performance.R")
 

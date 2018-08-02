@@ -1,8 +1,7 @@
 #!/usr/bin/env Rscript
-source ("tool.R")
+source("~/development/Rglobal/source/dataManager.R")
 source("MLClassification.R")
 source("performance.R")
-source("dataManager.R")
 
 library(chemmodlab)
 library (rpart)

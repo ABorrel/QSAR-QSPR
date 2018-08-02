@@ -1,8 +1,7 @@
 #!/usr/bin/env Rscript
 source("performance.R")
 library("pls")
-source("tool.R")
-source("dataManager.R")
+source ("~/development/Rglobal/source/dataManager.R")
 library (randomForest)
 library (MASS)
 library(rpart)

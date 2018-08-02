@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-source ("tool.R")
+source("~/development/Rglobal/source/dataManager.R")
 source("dataManager.R")
 source("dendocircular.R")
 

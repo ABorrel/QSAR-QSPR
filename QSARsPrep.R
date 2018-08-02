@@ -1,6 +1,5 @@
 #!/usr/bin/env Rscript
-source ("tool.R")
-source("dataManager.R")
+source ("~/development/Rglobal/source/dataManager.R")
 
 
 ################
@@ -16,6 +15,19 @@ maxquantile = as.double(args[5])
 proptraintest = as.double(args[6])
 logaff = as.integer(args[7])
 typeAff = args[8]
+nbNA = as.integer(args[9])
+
+
+#pdesc = "/home/borrela2/interference/Desc/tableDesc1D2DOpera"
+#pdata = "/home/borrela2/interference/spDataAnalysis/QSARclassCrossColor/1/crossColor/AC50_all"
+#prout = "/home/borrela2/interference/spDataAnalysis/QSARclassCrossColor/1/crossColor/"
+#valcor = 0.9
+#maxquantile = 90 
+#proptraintest = 0.15
+#logaff = 1
+#typeAff = "All"
+#nbNA = 1000
+
 
 #pdesc = "/home/borrela2/imatinib/results/analysis/QSARs/Lig-FPI-BS/descGlobal"
 #pdata = "/home/borrela2/imatinib/results/CHEMBL/AffAllcurated"
@@ -31,7 +43,7 @@ typeAff = args[8]
 # Process descriptors matrix #
 ##############################
 
-dglobal = openData(pdesc, valcor, prout)
+dglobal = openData(pdesc, valcor, prout, NbmaxNA = nbNA)
 dglobal = dglobal[[1]]
 
 print("==== Preprocessing ====")
@@ -72,8 +84,13 @@ if(logaff == 1){
 
 # merge with data descriptors and remove data remove from the manual curation
 lID = intersect(rownames(daffinity), rownames(dglobal))
+print(paste("NB ID selected, intersect aff and global: ", length(lID), sep = ""))
 dglobal = dglobal[lID,]
 daffinity = daffinity[lID,]
+
+
+# write global set
+write.csv(dglobal, paste(prout, "globalSet.csv", sep = ""))
 
 
 ##################
@@ -100,10 +117,4 @@ write.csv(dtestglobal, paste(prout, "testSet.csv", sep = ""))
   
 lcontrol = list(dtrainglobal, dtestglobal)
 controlDatasets(lcontrol, paste(prout, "qualitySplit", sep = ""))
-
-
-
-
-
-
 
