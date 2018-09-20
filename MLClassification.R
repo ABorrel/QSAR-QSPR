@@ -342,10 +342,10 @@ RFClassCV = function(lfolds, ntree, mtry, prout){
   print(paste("sp=", sp, sep = ""))
   print(paste("mcc=", mcc, sep = ""))
   
-  perf = list()
+  outmodel = list()
   lscore = c(acc, se, sp, mcc)
   names(lscore) = c("ACC", "SE", "SP", "MCC")
-  perf$CV = lscore
+  outmodel$CV = lscore
   
   
   # importance descriptors
@@ -356,9 +356,11 @@ RFClassCV = function(lfolds, ntree, mtry, prout){
   rownames(dimportance) = rownames(timportance)
   dimportance = dimportance[order(dimportance[,1], decreasing = TRUE),]
   
-  write.table(dimportance, paste(prout, "ImportanceDescClassCV_", length(lfolds), ".txt", sep = ""), sep = "\t")
+  write.table(dimportance, paste(prout, "ImportanceDescCV", length(lfolds), sep = ""), sep = "\t")
   
-  png(paste(prout, "ImportanceRFClassCV_", length(lfolds), ".png", sep = ""), 1000, 800)
+  outmodel$importance = dimportance
+  
+  png(paste(prout, "ImportanceRFClassCV", length(lfolds), ".png", sep = ""), 1000, 800)
   par( mar=c(10,4,4,4))
   plot(dimportance[,1], xaxt ="n", xlab="", pch = 19, ylab="M importance")
   axis(1, 1:length(dimportance[,1]), labels = rownames(dimportance), las = 2, cex.axis = 0.7, cex = 2.75)
@@ -366,7 +368,7 @@ RFClassCV = function(lfolds, ntree, mtry, prout){
     segments(i, dimportance[i,1] - dimportance[i,2], i, dimportance[i,1] + dimportance[i,2])
   }
   dev.off()
-  return(perf)
+  return(outmodel)
 }
 
 
@@ -427,9 +429,13 @@ RFClassTrainTest = function (dtrain, dtest, ntree, mtry, prout){
   outmodel$test = perftest
   outmodel$model = modelRF
   
+  # importance
+  
+  timportance = modelRF$importance[,1]
+  write.table(timportance, paste(prout, "ImportanceDesc", sep = ""), sep = "\t")
+  outmodel$importance = timportance
+  
   save(outmodel, file = paste(prout, "model.RData", sep = ""))
-  
-  
   png(paste(prout, "PerfTrainTest.png", sep = ""), 1600, 800)
   par(mfrow = c(1,2))
   plot(dtrain[,"Aff"], vpredtrainprob, type = "n")
@@ -505,10 +511,10 @@ CARTClassCV = function(lfolds, prout){
   sp = lpref[[3]]
   mcc = lpref[[4]]
   
-  lperf = list()
+  outmodel = list()
   lscore = c(acc, se, sp, mcc)
   names(lscore) = c("Acc", "Se", "Sp", "MCC")
-  lperf$CV = lscore
+  outmodel$CV = lscore
   
   png(paste(prout, "PerfCARTClassCV", length(lfolds), ".png", sep = ""), 800, 800)
   plot(y_real, y_proba, type = "n")
@@ -528,7 +534,8 @@ CARTClassCV = function(lfolds, prout){
   print("")
   print("")
   
-  return(lperf)
+  save(outmodel, file = paste(prout, "modelCV.RData", sep = ""))
+  return(outmodel)
 }
 
 
@@ -673,12 +680,13 @@ LDAClassCV = function(lfolds, prout){
   print(paste("sp=", sp, sep = ""))
   print(paste("mcc=", mcc, sep = ""))
   
-  perf = list()
+  outmodel = list()
   lscore = c(acc, se, sp, mcc)
   names(lscore) = c("ACC", "SE", "SP", "MCC")
-  perf$CV = lscore
+  outmodel$CV = lscore
   
-  return(perf)
+  save(outmodel, file = paste(prout, "modelCV.RData", sep = ""))
+  return(outmodel)
 }
 
 
@@ -788,6 +796,9 @@ barplotDescriptor = function(res.lda, prout, data_train){
   barplot(coef.sort, names.arg = names(coef.sort), las=2, cex.names = 2.5, col = vcol[names(coef.sort)], main = "", cex.main = 3, cex.axis = 2.7, ylab = "Significativité des descripteurs (%)", cex.lab = 3)
   #legend("topright",legend=c("coef >0","coef <0"), col=c(2,4),lty=2, cex = 2.75)
   dev.off ()
+  
+  write.table(coef.sort, file = paste(prout, "ImportanceDesc"), sep = "\t")
+  
 }
 
 

@@ -22,6 +22,13 @@ library(reshape2)
 # PCR - cross validation for grid
 PCRgridCV = function(lfolds, prout){
   
+  pnbopt = paste(prout, "grid.RData", sep = "")
+  if(file.exists(pnbopt)){
+    load(pnbopt)
+    return(nbCPoptimun)
+    
+  }
+  
   # performance in CV and number of cmp
   # return best number of cmp
   print(paste("== PCR in CV with ", length(lfolds), " Automatic optimization by folds ===", sep = ""))
@@ -92,11 +99,20 @@ PCRgridCV = function(lfolds, prout){
   print(paste("RMSEP=", vcpRMSEP[nbCPoptimun], sep = ""))
   print("")
   print("")
+  
+  save(nbCPoptimun, file = paste(prout, "grid.RData", sep = ""))
+ 
   return(nbCPoptimun)
 }
 
 # PCR - CV
 PCRCV = function(lfolds, nbcomp, dcluster, prout){
+  
+  pmodel = paste(prout, "modelCV.RData", sep = "")
+  if(file.exists(pmodel) == TRUE){
+    load(pmodel)
+    return(outmodelCV)
+  }
   
   # performance in CV and number of cmp
   # return best number of cmp
@@ -160,16 +176,24 @@ PCRCV = function(lfolds, nbcomp, dcluster, prout){
   print("")
   print("")
   
-  perf = list()
+  outmodelCV = list()
   lscore = c(R2cp, R02cp, MAEcp, corpred, rmsepcp)
   names(lscore) = c("R2", "R02", "MAE", "r", "RMSEP")
-  perf$CV = lscore
+  outmodelCV$CV = lscore
+  outmodelCV$vpred = vpred
+  save(outmodelCV, file = paste(prout, "modelCV.RData", sep = ""))
   
-  return(perf)
+  return(outmodelCV)
 }
   
 # PCR - real #
 PCRTrainTest = function(dtrain, dtest, dcluster, nbcp, prout){
+  
+  pmodel = paste(prout, "model.RData", sep = "")
+  if(file.exists(pmodel)){
+    load(pmodel)
+    return(outmodel) 
+  }
   
   modelpcr = pcr(Aff~., data=dtrain, ncomp = nbcp)
   predpcrtest = predict(modelpcr, ncomp = nbcp, newdata = dtest)
@@ -258,7 +282,6 @@ PCRTrainTest = function(dtrain, dtest, dcluster, nbcp, prout){
   return(outmodel)
 }
 
-
 ##################
 #    PLS MODELS  #
 ##################
@@ -269,6 +292,12 @@ PLSCV = function(lfolds, dcluster, prout){
   
   # performance in CV and number of cmp
   # return best number of cmp
+  
+  pmodel = paste(prout, "modelCV.RData", sep = "")
+  if(file.exists(pmodel) == TRUE){
+    load(pmodel)
+    return(outmodelCV)
+  }
   
   maxCp = dim(lfolds[[1]])[2]-1
   
@@ -352,17 +381,25 @@ PLSCV = function(lfolds, dcluster, prout){
   print("")
   print("")
   
-  perf = list()
+  outmodelCV = list()
   lscore = c(vcpR2[nbCPoptimun], vcpR02[nbCPoptimun], vcpMAE[nbCPoptimun], vcpcor[nbCPoptimun], vcpRMSEP[nbCPoptimun])
   names(lscore) = c("R2", "R02", "MAE", "r", "RMSEP")
-  perf$CV = lscore
-  perf$nbcp = nbCPoptimun
+  outmodelCV$CV = lscore
+  outmodelCV$nbcp = nbCPoptimun
+  save(outmodelCV, file = paste(prout, "modelCV.RData", sep = ""))
   
-  return (perf)
+  return (outmodelCV)
 }
 
 # PLS - real #
 PLSTrainTest = function(dtrain, dtest, dcluster, nbcp, prout){
+  
+  
+  pmodel = paste(prout, "model.RData", sep = "")
+  if(file.exists(pmodel)){
+    load(pmodel)
+    return(outmodel) 
+  }
   
   modelpls = plsr(Aff~., data=dtrain, ncomp = nbcp)
   predplstest = predict(modelpls, ncomp = nbcp, newdata = dtest)
@@ -449,7 +486,6 @@ PLSTrainTest = function(dtrain, dtest, dcluster, nbcp, prout){
   return(outmodel)
 }
 
-
 #################
 #      SVM      #
 #################
@@ -459,6 +495,13 @@ PLSTrainTest = function(dtrain, dtest, dcluster, nbcp, prout){
 ######################
 
 SVMRegCV = function(lfolds, vgamma, vcost, dcluster, prout){
+  
+  pmodel = paste(prout, "modelCV.RData", sep = "")
+  if(file.exists(pmodel) == TRUE){
+    load(pmodel)
+    return(outmodelCV)
+  }
+  
   
   print(paste("==== SVM in CV with ", length(lfolds), " Automatic optimization CV ====", sep = ""))
   
@@ -508,11 +551,12 @@ SVMRegCV = function(lfolds, vgamma, vcost, dcluster, prout){
   print("")
   print("")
   
-  perf = list()
+  outmodelCV = list()
   lscore = c(valr2, R02val, MAEval, corval, RMSEP)
   names(lscore) = c("R2", "R02", "MAE", "r", "RMSEP")
-  perf$CV = lscore
-  perf$model = modtune$best.model
+  outmodelCV$CV = lscore
+  outmodelCV$model = modtune$best.model
+  save(outmodelCV, file = paste(prout, "modelCV.RData", sep = ""))
   
   
   pdf(paste(prout, "PerfSVMreg_CV", length(lfolds), ".pdf", sep = ""), 20, 20)
@@ -532,11 +576,17 @@ SVMRegCV = function(lfolds, vgamma, vcost, dcluster, prout){
   tperf = cbind(y_predict, y_real)
   write.table(tperf, paste(prout, "perfSVMRegCV_", length(lfolds), ".txt", sep = ""), sep = "\t")
   
-  return(perf)
+  return(outmodelCV)
 }
 
-
 SVMRegTrainTest = function(dtrain, dtest, vgamma, vcost, dcluster, prout){
+  
+  pmodel = paste(prout, "model.RData", sep = "")
+  if(file.exists(pmodel)){
+    load(pmodel)
+    return(outmodel) 
+  }
+  
   
   print(paste("==== SVM in train-test --- Automatic optimization CV-10====", sep = ""))
   
@@ -630,8 +680,6 @@ SVMRegTrainTest = function(dtrain, dtest, vgamma, vcost, dcluster, prout){
   return(outmodel)
 }
 
-
-
 SVMTune = function(dtrain, vgamma, vcost, nbCV){
   
   
@@ -685,8 +733,13 @@ SVMTune = function(dtrain, vgamma, vcost, nbCV){
 # NEURAL NETWORK #
 ##################
 
-
 NNRegCV = function(lfolds, dcluster, vdecay, vsize, prout){
+  
+  pmodel = paste(prout, "modelCV.RData", sep = "")
+  if(file.exists(pmodel)){
+    load(pmodel)
+    return(outmodelCV) 
+  }
   
   print(paste("==== NN in CV with ", length(lfolds), " Automatic optimization CV10 decay and size ====", sep = ""))
   
@@ -707,7 +760,7 @@ NNRegCV = function(lfolds, dcluster, vdecay, vsize, prout){
     }
     
     # grid optimisation 
-    modelNN = NNRegOptimizeGrid(dtrain, "0", vdecay, vsize, 10)
+    modelNN = NNRegOptimizeGrid(dtrain, "0", vdecay, vsize, 10, prout)
     
     #dtrain = as.data.frame(scale(dtrain))
     ddestrain = dtrain[,-c(which(colnames(dtrain) == "Aff"))]
@@ -744,10 +797,11 @@ NNRegCV = function(lfolds, dcluster, vdecay, vsize, prout){
   print("")
   print("")
   
-  perf = list()
+  outmodelCV = list()
   lscore = c(valr2, R02val, MAEval, corval, RMSEP)
   names(lscore) = c("R2", "R02", "MAE", "r", "RMSEP")
-  perf$CV = lscore
+  outmodelCV$CV = lscore
+  save(outmodelCV, file = paste(prout, "modelCV.RData", sep = ""))
   
   pdf(paste(prout, "PerfNNCV", length(lfolds), ".pdf", sep = ""), 20, 20)
   plot(y_real, y_predict, pch = 20, main = paste("Correlation = ", round(cor(y_real, y_predict), digits = 3)), cex = 2)
@@ -766,18 +820,21 @@ NNRegCV = function(lfolds, dcluster, vdecay, vsize, prout){
   tperf = cbind(y_predict, y_real)
   write.table(tperf, paste(prout, "perfNNCV_", length(lfolds), ".txt", sep = ""), sep = "\t")
   
-  return(perf)
+  return(outmodelCV)
 }
 
-
-
-
 NNReg = function(dtrain, dtest, dcluster,  vdecay, vsize, prout){
+  
+  pmodel = paste(prout, "model.RData", sep = "")
+  if(file.exists(pmodel)){
+    load(pmodel)
+    return(outmodel) 
+  }
   
   print(paste("==== Neural network in train-test ===", sep = ""))
   
   # find best model
-  modelNN = NNRegOptimizeGrid(dtrain, "0", vdecay, vsize, 10)
+  modelNN = NNRegOptimizeGrid(dtrain, "0", vdecay, vsize, 10, prout)
   
   # scale data
   dtrain = as.data.frame(dtrain)
@@ -878,11 +935,7 @@ NNReg = function(dtrain, dtest, dcluster,  vdecay, vsize, prout){
   return(outmodel)
 }
 
-
-
-
-
-NNRegOptimizeGrid = function(dtrain, pfig, vdecay, vsize, nbCV){
+NNRegOptimizeGrid = function(dtrain, pfig, vdecay, vsize, nbCV, prout){
   
   
   lfolds = samplingDataNgroup(dtrain, nbCV)
@@ -924,11 +977,15 @@ NNRegOptimizeGrid = function(dtrain, pfig, vdecay, vsize, nbCV){
       optsize = NULL
       for(i in vsize){
         #2000
-        modelNN = nnet(ddestrain, Aff, size = i, linout = T, maxit = 200, MaxNWts = i*(dim(ddestrain)[2]+1)+i+1, decay = d)
-        vpred = predict (modelNN, ddesctest)
-        valr2 = calR2(dtestAff, vpred)
-        if (valr2 < 0){
-          valr2 = 0
+        modelNN = try(nnet(ddestrain, Aff, size = i, linout = T, maxit = 2000, MaxNWts = i*(dim(ddestrain)[2]+1)+i+1, decay = d), TRUE)
+        if(!is.character(modelNN)){
+          vpred = predict (modelNN, ddesctest)
+          valr2 = calR2(dtestAff, vpred)
+          if (valr2 < 0){
+            valr2 = 0
+          }
+        }else{
+          valr2 = NA
         }
         optsize = append(optsize, valr2)
       }
@@ -937,18 +994,21 @@ NNRegOptimizeGrid = function(dtrain, pfig, vdecay, vsize, nbCV){
     colnames(gridOptimize) = vdecay
     rownames(gridOptimize) = vsize
     
+    # write table
+    if(pfig != "0"){
+      write.csv(gridOptimize, file = paste(prout, "gridOptz.grid", sep = ""))
+    }
+      
     if(pfig != "0"){
       plot(rownames(gridOptimize), gridOptimize[,1] , type = "l", col = "red", lwd = 3, ylim = c(min(gridOptimize),max(gridOptimize)), xlab = "Size", ylab = "R2 in CV 10", main = paste("fold: ", k, sep = ""))
       lines(rownames(gridOptimize), gridOptimize[,2], lwd = 3, col = "green")
       lines(rownames(gridOptimize), gridOptimize[,3], lwd = 3, col = "blue")
       lines(rownames(gridOptimize), gridOptimize[,4], lwd = 3, col = "pink")
-      lines(rownames(gridOptimize), gridOptimize[,5], lwd = 3, col = "yellow")
-      lines(rownames(gridOptimize), gridOptimize[,6], lwd = 3, col = "black")
-      legend("right" ,col = c("red", "green", "blue", "pink", "yellow", "black"), legend = c("0.001", "0.01", "0.1", "1", "10", "100"), pch = 19)
+      legend("right" ,col = c("red", "green", "blue", "pink", "yellow", "black"), legend = c("1", "2", "5", "10"), pch = 19)
     }
     
-    idecaybest = ceiling(which(gridOptimize == max(gridOptimize))/ dim(gridOptimize)[1])
-    isizebest = which(gridOptimize[,idecaybest] == max(gridOptimize))
+    idecaybest = ceiling(which(gridOptimize == max(gridOptimize, na.rm = TRUE))/ dim(gridOptimize)[1])
+    isizebest = which(gridOptimize[,idecaybest] == max(gridOptimize, na.rm = TRUE))
     
     bestsize = as.double(rownames(gridOptimize)[isizebest])
     bestdecay = as.double(colnames(gridOptimize)[idecaybest])
@@ -1071,12 +1131,6 @@ DLRegCV = function(lfolds, dcluster, prout){
   write.table(tperf, paste(prout, "perfNNCV_", length(lfolds), ".txt", sep = ""), sep = "\t")
 }
 
-
-
-
-
-
-
 DLReg = function(dtrain, dtest, dcluster, prout){
   
   print(paste("==== Deep Learning in train-test ====", sep = ""))
@@ -1194,6 +1248,13 @@ DLReg = function(dtrain, dtest, dcluster, prout){
 
 RFGridRegCV = function(lntree, lmtry, lfolds, prout){
   
+  pgrid = paste(prout, "grid.RData", sep = "")
+  if(file.exists(pgrid) == TRUE){
+    load(pgrid)
+    return(list(rownames (gridOpt)[which(gridOpt==max(gridOpt), arr.ind=T)[1]],colnames (gridOpt)[which(gridOpt==max(gridOpt), arr.ind=T)[2]] ))
+  }
+  
+  
   gridOpt = data.frame ()
   i = 0
   for (ntree in lntree){
@@ -1227,13 +1288,11 @@ RFGridRegCV = function(lntree, lmtry, lfolds, prout){
       }
       
       # R2 for grid
-      
       valr2 = calR2(y_real, y_predict)
       #print(valr2)
       gridOpt[i,j] = valr2
       
       # R conversion 
-      
       #rate = calculTaux2  (changeList(as.double(l_predict)-1),changeList(y_real))
       #mcc = MCC (rate[1], rate[2], rate[3], rate[4])
       #grid[i,j] = mcc
@@ -1241,14 +1300,20 @@ RFGridRegCV = function(lntree, lmtry, lfolds, prout){
   }
   colnames (gridOpt) = lmtry
   rownames (gridOpt) = lntree
-  
   write.table (gridOpt, paste(prout, "RFreg.grid", sep = ""))
+  save(gridOpt, file = paste(prout, "grid.RData", sep = ""))
   
   print(paste("=== RF grid optimisation in CV=", length(lfolds), " ntree = ", rownames (gridOpt)[which(gridOpt==max(gridOpt), arr.ind=T)[1]], " mtry=", colnames (gridOpt)[which(gridOpt==max(gridOpt), arr.ind=T)[2]], sep = ""))
   return (list(rownames (gridOpt)[which(gridOpt==max(gridOpt), arr.ind=T)[1]],colnames (gridOpt)[which(gridOpt==max(gridOpt), arr.ind=T)[2]] ))
 }
 
 RFregCV = function(lfolds, ntree, mtry, dcluster, prout){
+  
+  pmodel = paste(prout, "modelCV.RData", sep = "")
+  if(file.exists(pmodel) == TRUE){
+    load(pmodel)
+    return(outmodelCV)
+  }
   
   print(paste("==RF in CV with ", length(lfolds), " folds ntree = ", ntree, " mtry = ", mtry, sep = ""))
   
@@ -1296,10 +1361,11 @@ RFregCV = function(lfolds, ntree, mtry, dcluster, prout){
   print("")
   print("")
   
-  perf = list()
+  outmodelCV = list()
   lscore = c(valr2, R02val, MAEval, corval, RMSEP)
   names(lscore) = c("R2", "R02", "MAE", "r", "RMSEP")
-  perf$CV = lscore
+  outmodelCV$CV = lscore
+  save(outmodelCV, file = paste(prout, "modelCV.RData", sep = ""))
   
   # importance descriptors
   Mimportance = apply(timportance, 1, mean)
@@ -1398,12 +1464,17 @@ RFregCV = function(lfolds, ntree, mtry, dcluster, prout){
   print(p)
   ggsave(paste(prout, "PerfRFregname_CV10.png", sep = ""), width = 8,height = 8, dpi = 300)
 
-  return(perf)
+  return(outmodelCV)
   
 }
 
 RFreg = function (dtrain, dtest, ntree, mtry, dcluster, prout){
   
+  pmodel = paste(prout, "model.RData", sep = "")
+  if(file.exists(pmodel)){
+    load(pmodel)
+    return(outmodel) 
+  }
   
   modelRF = randomForest( Aff~., data = dtrain, mtry=as.integer(mtry), ntree=as.integer(ntree), type = "response",  importance=TRUE)
   vpredtrain = predict (modelRF, dtrain, type = "response")
@@ -1544,8 +1615,13 @@ RFreg = function (dtrain, dtest, ntree, mtry, dcluster, prout){
 #   CART    #
 #############
 
-
 CARTRegCV = function(lfolds, dcluster, prout){
+  
+  pmodel = paste(prout, "modelCV.RData", sep = "")
+  if(file.exists(pmodel) == TRUE){
+    load(pmodel)
+    return(outmodelCV)
+  }
   
   print(paste("== CART in CV with ", length(lfolds), "==", sep = ""))
   
@@ -1600,10 +1676,11 @@ CARTRegCV = function(lfolds, dcluster, prout){
   print(paste("Cor=", corval, sep = ""))
   print(paste("RMSEP=", RMSEP, sep = ""))
   
-  perf = list()
+  outmodelCV = list()
   lscore = c(valr2, R02val, MAEval, corval, RMSEP)
   names(lscore) = c("R2", "R02", "MAE", "r", "RMSEP")
-  perf$CV = lscore
+  outmodelCV$CV = lscore
+  save(outmodelCV, file = paste(prout, "modelCV.RData", sep = ""))
   
   pdf(paste(prout, "PerfCARTReg_CV", length(lfolds), ".pdf", sep = ""), 20, 20)
   plot(y_real, y_predict, pch = 20, main = paste("Correlation = ", round(cor(y_real, y_predict), digits = 3)), cex = 2)
@@ -1624,11 +1701,16 @@ CARTRegCV = function(lfolds, dcluster, prout){
   colnames(dpred) = c("Predict", "Real")
   write.table(dpred, file = paste(prout, "PerfCARTRegCV", length(lfolds), ".txt", sep = ""), sep = "\t")
   
-  return(perf)
+  return(outmodelCV)
 }
 
-
 CARTreg = function (dtrain, dtest, dcluster, prout){
+  
+  pmodel = paste(prout, "model.RData", sep = "")
+  if(file.exists(pmodel)){
+    load(pmodel)
+    return(outmodel) 
+  }
   
   modelCART = rpart( Aff~., data = dtrain, method = "anova")#, control = rpart.control(cp = 0.05))
   

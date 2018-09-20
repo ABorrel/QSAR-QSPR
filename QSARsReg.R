@@ -30,11 +30,11 @@ nbCV = as.integer(args[5])
 
 # model regression #
 ####################
-modelPCRreg = 0 
-modelPLSreg = 0
-modelSVMreg = 0
-modelRFreg = 0
-modelCartreg = 0
+modelPCRreg = 1 
+modelPLSreg = 1
+modelSVMreg = 1
+modelRFreg = 1
+modelCartreg = 1
 modelNNreg = 1
 modelDLreg = 0 #old creation of DNN using R
 chemmodlabreg = 0
@@ -80,6 +80,9 @@ dtest = read.csv(ptest, header = TRUE)
 rownames(dtest) = dtest[,1]
 dtest = dtest[,-1]
 
+# dglobal for CV
+dglobal = rbind(dtrain, dtest[,colnames(dtrain)])
+
 # cluster
 if (pcluster != "0"){
   dcluster = read.csv(pcluster, header = TRUE)
@@ -100,7 +103,7 @@ print("")
 
 # sampling data for CV #
 ########################
-lgroupCV = samplingDataNgroup(dtrain, nbCV)
+lgroupCV = samplingDataNgroup(dglobal, nbCV)
 controlDatasets(lgroupCV, paste(prout, "ChecksamplingCV", nbCV, sep = ""))
 
 
@@ -114,22 +117,56 @@ print("**************************")
 ############
 
 if (modelPCRreg == 1){
+  
+  # control number of descriptors VS number of data
+  nbdesc = dim(dtrain)[2]
+  nbchemical = dim(dtrain)[1]
+  if(((100-nbCV)/100*nbchemical) <= nbdesc){
+    ldesc = reduceNBdesc(dtrain, nbCV)
+  }else{
+    ldesc = colnames(dtrain)
+  }
+  dtrainPCR = dtrain[,ldesc]
+  dglobalPCR = dglobal[,ldesc]
+  dtestPCR = dtest[,ldesc]
+  lgroupCVPCR = samplingDataNgroup(dglobalPCR, nbCV)
+  
+  print(paste("Nb descriptors PCR: ", dim(dtrainPCR)[2], sep = ""))
+  print(paste("Nb chemical PCR: ", dim(dtrainPCR)[1], sep = ""))
+  
   proutPCR = paste(prout, "PCRreg/", sep = "")
   dir.create(proutPCR)
-  nbCp = PCRgridCV(lgroupCV, proutPCR)
-  outPCRCV = PCRCV(lgroupCV, nbCp, dcluster, proutPCR)
-  outPCR = PCRTrainTest(dtrain, dtest, dcluster, nbCp, proutPCR)
+  nbCp = PCRgridCV(lgroupCVPCR, proutPCR)
+  outPCRCV = PCRCV(lgroupCVPCR, nbCp, dcluster, proutPCR)
+  outPCR = PCRTrainTest(dtrainPCR, dtestPCR, dcluster, nbCp, proutPCR)
 }
 
 ### PLS  ####
 #############
 
 if (modelPLSreg == 1){
+  
+  # control number of descriptors VS number of data
+  nbdesc = dim(dtrain)[2]
+  nbchemical = dim(dtrain)[1]
+  if(((100-nbCV)/100*nbchemical) <= nbdesc){
+    ldesc = reduceNBdesc(dtrain, nbCV)
+  }else{
+    ldesc = colnames(dtrain)
+  }
+  dtrainPLS = dtrain[,ldesc]
+  dglobalPLS = dglobal[,ldesc]
+  dtestPLS = dtest[,ldesc]
+  lgroupCVPLS = samplingDataNgroup(dglobalPLS, nbCV)
+  
+  print(paste("Nb descriptors PLS: ", dim(dtrainPLS)[2], sep = ""))
+  print(paste("Nb chemical PLS: ", dim(dtrainPLS)[1], sep = ""))
+  
   proutPLS = paste(prout, "PLSreg/", sep = "")
   dir.create(proutPLS)
-  outPLSCV = PLSCV(lgroupCV, dcluster, proutPLS)
+  outPLSCV = PLSCV(lgroupCVPLS, dcluster, proutPLS)
   #have to finish
-  outPLS = PLSTrainTest(dtrain, dtest, dcluster, outPLSCV$nbcp, proutPLS)
+  outPLS = PLSTrainTest(dtrainPLS, dtestPLS, dcluster, outPLSCV$nbcp, proutPLS)
 }
 
 ### SVM ###
@@ -275,6 +312,11 @@ if(modelNNreg==1){
 rownames(perfTest) = rownameTable
 rownames(perftrain) = rownameTable
 rownames(perfCV) = rownameTable
+
+# round
+perfTest = round(perfTest,3)
+perftrain = round(perftrain,3)
+perfCV = round(perfCV,3)
 
 colnames(perfTest) = c("R2", "R02", "MAE", "r", "RMSEP")
 colnames(perftrain) = c("R2", "R02", "MAE", "r", "RMSEP")

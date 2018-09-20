@@ -100,6 +100,13 @@ ltraintest = samplingDataFraction(dglobal, proptraintest)
 dtrain = ltraintest[[1]]
 dtest = ltraintest[[2]]
 
+# rapply null sd and correlation
+dtrain = delSDNull(dtrain)
+dtest = delSDNull(dtest)
+ldesc = intersect(colnames(dtrain), colnames(dtest))
+
+dtrain = dtrain[,ldesc]
+dtest = dtest[,ldesc]
 
 #################
 # Add affinity  #
