@@ -17,6 +17,7 @@ ptest = args[2]
 pcluster = args[3]
 prout = args[4]
 nbCV = as.integer(args[5])
+internalCV = as.integer(args[6])
 
 
 # to test
@@ -81,7 +82,12 @@ rownames(dtest) = dtest[,1]
 dtest = dtest[,-1]
 
 # dglobal for CV
-dglobal = rbind(dtrain, dtest[,colnames(dtrain)])
+if(internalCV == 1){
+  dglobal = dtrain
+}else{
+  dglobal = rbind(dtrain, dtest[,colnames(dtrain)])  
+}
+
 
 # cluster
 if (pcluster != "0"){
@@ -121,7 +127,8 @@ if (modelPCRreg == 1){
   # control number of descriptors VS number of data
   nbdesc = dim(dtrain)[2]
   nbchemical = dim(dtrain)[1]
-  if(((100-nbCV)/100*nbchemical) <= nbdesc){
+  print ((100-nbCV)/100*(nbchemical))
+  if(((100-nbCV)/100*(nbchemical)) <= nbdesc){
     ldesc = reduceNBdesc(dtrain, nbCV)
   }else{
     ldesc = colnames(dtrain)

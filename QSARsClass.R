@@ -31,7 +31,7 @@ nbCV = as.integer(args[5])
 
 # model classification #
 ########################
-modelSVMclass = 0
+modelSVMclass = 1
 modelRFclass = 1
 modelLDAclass = 1
 modelCartclass = 1
@@ -134,10 +134,9 @@ if(modelSVMclass == 1){
 if(modelRFclass == 1){
   prRF = paste(prout, "RFclass/", sep = "")
   dir.create(prRF)
-  vntree = c(10,50,100,200,500, 1000)
-  vmtry = c(1,2,3,4,5,10,15,20, 25, 30)
+  vntree = c(10,50,100,200,500)
+  vmtry = c(1,2,3,4,5,10,15,20,25,30)
   
-  #RFregCV(lgroupCV, 50, 5, dcluster, prout)# for test
   parameters = RFGridClassCV(vntree, vmtry, lgroupCV,  prRF)
   outRFCV = RFClassCV(lgroupCV, parameters[[1]], parameters[[2]], prRF)
   outRF = RFClassTrainTest(dtrain, dtest, parameters[[1]], parameters[[2]], prRF)
@@ -190,7 +189,6 @@ if(modelLDAclass == 1){
   perfTest = rbind(perfTest, outLDA$test)
   rownameTable = append(rownameTable, "LDA")
 }
-
 
 rownames(perfTest) = rownameTable
 rownames(perftrain) = rownameTable

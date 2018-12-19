@@ -30,6 +30,13 @@ library(reshape2)
 
 SVMClassTrainTest = function(dtrain, dtest, vgamma, vcost, prout){
   
+  pmodel = paste(prout, "model.RData", sep = "")
+  if(file.exists(pmodel)){
+    load(pmodel)
+    return(outmodel) 
+  }
+  
+  
   print(paste("==== SVM in train-test --- Automatic optimization CV-10====", sep = ""))
   
   # optimisation on CV-10
@@ -52,7 +59,7 @@ SVMClassTrainTest = function(dtrain, dtest, vgamma, vcost, prout){
   colnames(dpredtrain) = c("Real", "Predict")
   write.csv(dpredtrain, paste(prout, "TrainPred.csv", sep = ""))
   
-  lpreftrain = classPerf(dtrain[,"Aff"], predsvmtrain)
+  lpreftrain = classPerf(dpredtrain[,1], dpredtrain[,2])
   acctrain = lpreftrain[[1]]
   setrain = lpreftrain[[2]]
   sptrain = lpreftrain[[3]]
@@ -63,7 +70,7 @@ SVMClassTrainTest = function(dtrain, dtest, vgamma, vcost, prout){
   colnames(dpredtest) = c("Real", "Predict")
   write.csv(dpredtest, paste(prout, "TestPred.csv", sep = ""))
   
-  lpreftest = classPerf(dtrain[,"Aff"], predsvmtest)
+  lpreftest = classPerf(dtest[,"Aff"], predsvmtest)
   acctest = lpreftest[[1]]
   setest = lpreftest[[2]]
   sptest = lpreftest[[3]]
@@ -101,14 +108,19 @@ SVMClassTrainTest = function(dtrain, dtest, vgamma, vcost, prout){
   outmodel$model = modelsvm
   
   save(outmodel, file = paste(prout, "model.RData", sep = ""))
-  
-  
+  return(outmodel)
 } 
   
   
-  
-  
 SVMClassCV = function(lgroupCV, vgamma, vcost, prout){  
+  
+  pmodel = paste(prout, "modelCV.RData", sep = "")
+  if(file.exists(pmodel) == TRUE){
+    load(pmodel)
+    return(outmodelCV)
+  }
+  
+  
   
   print(paste("== SVM in CV with ", length(lgroupCV), " Automatic optimization by folds", sep = ""))
   
@@ -160,14 +172,16 @@ SVMClassCV = function(lgroupCV, vgamma, vcost, prout){
   print(paste("se=", se, sep = ""))
   print(paste("sp=", sp, sep = ""))
   print(paste("mcc=", mcc, sep = "")) 
+  print("")
+  print("")
   
-  perf = list()
+  outmodelCV = list()
   lscore = c(acc, se, sp, mcc)
   names(lscore) = c("ACC", "SE", "SP", "MCC")
-  perf$CV = lscore
-  return(perf)  
+  outmodelCV$CV = lscore
+  save(outmodelCV, file = paste(prout, "modelCV.RData", sep = ""))
+  return(outmodelCV)  
 }
-
 
 
 SVMTuneClass = function(dtrain, vgamma, vcost, nbCV){
@@ -231,6 +245,13 @@ SVMTuneClass = function(dtrain, vgamma, vcost, nbCV){
 
 RFGridClassCV = function(lntree, lmtry, lfolds, prout){
   
+  pgrid = paste(prout, "grid.RData", sep = "")
+  if(file.exists(pgrid) == TRUE){
+    load(pgrid)
+    return(list(rownames (gridOpt)[which(gridOpt==max(gridOpt), arr.ind=T)[1]],colnames (gridOpt)[which(gridOpt==max(gridOpt), arr.ind=T)[2]] ))
+  }
+  
+  
   gridOpt = data.frame ()
   i = 0
   for (ntree in lntree){
@@ -279,12 +300,19 @@ RFGridClassCV = function(lntree, lmtry, lfolds, prout){
   
   write.table (gridOpt, paste(prout, "RFclassMCC.grid", sep = ""))
   print(which(gridOpt == max(gridOpt), arr.ind = TRUE))
+  save(gridOpt, file = paste(prout, "grid.RData", sep = ""))
   
   print(paste("=== RF grid optimisation in CV = ", length(lfolds), " ntree = ", rownames (gridOpt)[which(gridOpt==max(gridOpt), arr.ind=T)[1]], " mtry=", colnames (gridOpt)[which(gridOpt==max(gridOpt), arr.ind=T)[2]], sep = ""))
   return (list(rownames (gridOpt)[which(gridOpt==max(gridOpt), arr.ind=T)[1]],colnames (gridOpt)[which(gridOpt==max(gridOpt), arr.ind=T)[2]] ))
 }
 
 RFClassCV = function(lfolds, ntree, mtry, prout){
+  
+  pmodel = paste(prout, "modelCV.RData", sep = "")
+  if(file.exists(pmodel) == TRUE){
+    load(pmodel)
+    return(outmodelCV)
+  }
   
   print(paste("== RF in CV with ", length(lfolds), " folds ntree = ", ntree, " mtry = ", mtry, sep = ""))
   
@@ -341,11 +369,13 @@ RFClassCV = function(lfolds, ntree, mtry, prout){
   print(paste("se=", se, sep = ""))
   print(paste("sp=", sp, sep = ""))
   print(paste("mcc=", mcc, sep = ""))
+  print("")
+  print("")
   
-  outmodel = list()
+  outmodelCV = list()
   lscore = c(acc, se, sp, mcc)
   names(lscore) = c("ACC", "SE", "SP", "MCC")
-  outmodel$CV = lscore
+  outmodelCV$CV = lscore
   
   
   # importance descriptors
@@ -358,7 +388,7 @@ RFClassCV = function(lfolds, ntree, mtry, prout){
   
   write.table(dimportance, paste(prout, "ImportanceDescCV", length(lfolds), sep = ""), sep = "\t")
   
-  outmodel$importance = dimportance
+  outmodelCV$importance = dimportance
   
   png(paste(prout, "ImportanceRFClassCV", length(lfolds), ".png", sep = ""), 1000, 800)
   par( mar=c(10,4,4,4))
@@ -368,11 +398,20 @@ RFClassCV = function(lfolds, ntree, mtry, prout){
     segments(i, dimportance[i,1] - dimportance[i,2], i, dimportance[i,1] + dimportance[i,2])
   }
   dev.off()
-  return(outmodel)
+  
+  save(outmodelCV, file = paste(prout, "modelCV.RData", sep = ""))
+  return(outmodelCV)
 }
 
 
 RFClassTrainTest = function (dtrain, dtest, ntree, mtry, prout){
+  
+  pmodel = paste(prout, "model.RData", sep = "")
+  if(file.exists(pmodel)){
+    load(pmodel)
+    return(outmodel) 
+  }
+  
   
   modelRF = randomForest( Aff~., data = dtrain, mtry=as.integer(mtry), ntree=as.integer(ntree), type = "class",  importance=TRUE)
   vpredtrain = predict (modelRF, dtrain, type = "class")
@@ -416,6 +455,8 @@ RFClassTrainTest = function (dtrain, dtest, ntree, mtry, prout){
   print(paste("se=", vperftest[[2]], sep = ""))
   print(paste("sp=", vperftest[[3]], sep = ""))
   print(paste("mcc=", vperftest[[4]], sep = ""))
+  print("")
+  print("")
   
   
   perftrain = c(acctrain, setrain, sptrain, mcctrain)
@@ -430,12 +471,12 @@ RFClassTrainTest = function (dtrain, dtest, ntree, mtry, prout){
   outmodel$model = modelRF
   
   # importance
-  
   timportance = modelRF$importance[,1]
   write.table(timportance, paste(prout, "ImportanceDesc", sep = ""), sep = "\t")
   outmodel$importance = timportance
   
   save(outmodel, file = paste(prout, "model.RData", sep = ""))
+  
   png(paste(prout, "PerfTrainTest.png", sep = ""), 1600, 800)
   par(mfrow = c(1,2))
   plot(dtrain[,"Aff"], vpredtrainprob, type = "n")
@@ -462,6 +503,12 @@ RFClassTrainTest = function (dtrain, dtest, ntree, mtry, prout){
 ##########
 
 CARTClassCV = function(lfolds, prout){
+  
+  pmodel = paste(prout, "modelCV.RData", sep = "")
+  if(file.exists(pmodel) == TRUE){
+    load(pmodel)
+    return(outmodelCV)
+  }
   
   print(paste("== CART in CV with ", length(lfolds), "==", sep = ""))
   
@@ -511,10 +558,10 @@ CARTClassCV = function(lfolds, prout){
   sp = lpref[[3]]
   mcc = lpref[[4]]
   
-  outmodel = list()
+  outmodelCV = list()
   lscore = c(acc, se, sp, mcc)
   names(lscore) = c("Acc", "Se", "Sp", "MCC")
-  outmodel$CV = lscore
+  outmodelCV$CV = lscore
   
   png(paste(prout, "PerfCARTClassCV", length(lfolds), ".png", sep = ""), 800, 800)
   plot(y_real, y_proba, type = "n")
@@ -534,13 +581,20 @@ CARTClassCV = function(lfolds, prout){
   print("")
   print("")
   
-  save(outmodel, file = paste(prout, "modelCV.RData", sep = ""))
-  return(outmodel)
+  save(outmodelCV, file = paste(prout, "modelCV.RData", sep = ""))
+  return(outmodelCV)
 }
 
 
 
 CARTclass = function (dtrain, dtest, prout){
+  
+  pmodel = paste(prout, "model.RData", sep = "")
+  if(file.exists(pmodel)){
+    load(pmodel)
+    return(outmodel) 
+  }
+  
   
   print("== CART in train/test ==")
   
@@ -624,7 +678,14 @@ CARTclass = function (dtrain, dtest, prout){
 
 LDAClassCV = function(lfolds, prout){
   
-  print(paste("== RF in CV with ", length(lfolds), sep = ""))
+ 
+  pmodel = paste(prout, "modelCV.RData", sep = "")
+  if(file.exists(pmodel) == TRUE){
+    load(pmodel)
+    return(outmodelCV)
+  }
+  
+  print(paste("==== LDA in CV with ", length(lfolds), "=====", sep = ""))
   
   # data combination
   k = 1
@@ -679,21 +740,27 @@ LDAClassCV = function(lfolds, prout){
   print(paste("se=", se, sep = ""))
   print(paste("sp=", sp, sep = ""))
   print(paste("mcc=", mcc, sep = ""))
+  print("")
+  print("")
   
-  outmodel = list()
+  outmodelCV = list()
   lscore = c(acc, se, sp, mcc)
   names(lscore) = c("ACC", "SE", "SP", "MCC")
-  outmodel$CV = lscore
+  outmodelCV$CV = lscore
   
-  save(outmodel, file = paste(prout, "modelCV.RData", sep = ""))
-  return(outmodel)
+  save(outmodelCV, file = paste(prout, "modelCV.RData", sep = ""))
+  return(outmodelCV)
 }
 
 
-
-
-
 LDAClassTrainTest = function (dtrain, dtest, prout){#, name_barplot, draw_plot, name_ACP, graph){
+  
+  pmodel = paste(prout, "model.RData", sep = "")
+  if(file.exists(pmodel)){
+    load(pmodel)
+    return(outmodel) 
+  }
+  
   
   modelLDA = lda(Aff~., dtrain)
   
@@ -741,7 +808,8 @@ LDAClassTrainTest = function (dtrain, dtest, prout){#, name_barplot, draw_plot, 
   print(paste("se=", vperftest[[2]], sep = ""))
   print(paste("sp=", vperftest[[3]], sep = ""))
   print(paste("mcc=", vperftest[[4]], sep = ""))
-  
+  print("")
+  print("")
   
   perftrain = c(acctrain, setrain, sptrain, mcctrain)
   names(perftrain) = c("ACC", "SE", "SP", "MCC")
@@ -776,7 +844,6 @@ LDAClassTrainTest = function (dtrain, dtest, prout){#, name_barplot, draw_plot, 
   barplotDescriptor(modelLDA, prout, dtrain)
   return(outmodel)
 }
-
 
 
 barplotDescriptor = function(res.lda, prout, data_train){

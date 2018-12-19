@@ -1014,7 +1014,7 @@ NNRegOptimizeGrid = function(dtrain, pfig, vdecay, vsize, nbCV, prout){
     bestdecay = as.double(colnames(gridOptimize)[idecaybest])
     
     # best model
-    modelNN = nnet(ddestrain, Aff, size = bestsize, linout = T,  maxit = 200, MaxNWts = bestsize*(dim(ddestrain)[2]+1)+bestsize+1, decay = bestdecay)
+    modelNN = nnet(ddestrain, Aff, size = bestsize, linout = T,  maxit = 2000, MaxNWts = bestsize*(dim(ddestrain)[2]+1)+bestsize+1, decay = bestdecay)
     vpred = predict(modelNN, ddesctest)
     R2 = calR2(dtestAff, vpred)
     lR2best = append(lR2best, R2)
@@ -1312,6 +1312,46 @@ RFregCV = function(lfolds, ntree, mtry, dcluster, prout){
   pmodel = paste(prout, "modelCV.RData", sep = "")
   if(file.exists(pmodel) == TRUE){
     load(pmodel)
+    
+    valr2 = outmodelCV$CV[1]
+    dpred = read.csv(paste(prout, "perfRFRegCV_", length(lfolds), ".txt", sep = ""), header = TRUE, sep = "\t")
+    colnames(dpred) = c("Ypredict", "Yreal")
+    dpred = as.data.frame(dpred)
+    
+    theme_set(theme_grey())
+    p = ggplot(dpred, aes(Yreal, Ypredict))+
+      geom_point(size=1.5, colour="black", shape=21) + 
+      geom_text(x=4.1, y=7.7, label = paste("R2=",round(valr2,2), sep = ""), size = 8)+
+      labs(x = "Experimental pMIC", y = "Predicted pMIC") +
+      theme(axis.text.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.text.x = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.x =  element_text(size = 25, hjust = 0.5, vjust =0.1))+
+      xlim (c(3.5, 8)) +
+      geom_segment(aes(x = 3.5, y = 3.5, xend = 8, yend = 8), linetype=1, size = 0.1) + 
+      ylim (c(3.5, 8))
+    ggsave(paste(prout, "PerfRFregpoint_CV10.png", sep = ""), width = 6,height = 6, dpi = 300)
+    
+    # importance
+    dimportance = read.table(paste(prout, "ImportanceDescFRRegCV_", length(lfolds), ".txt", sep = ""))
+    
+    ORDER = order(dimportance[,1], decreasing = T)
+    NAME = rownames(dimportance)
+    
+    dimportance = cbind(dimportance, NAME)
+    dimportance = cbind (dimportance, ORDER)
+    dimportance = dimportance[ORDER[seq(1,10)],]
+    dimportance = as.data.frame(dimportance)
+    
+    theme_set(theme_grey())
+    p = ggplot(dimportance, aes(-ORDER, M, fill = 1)) + 
+      geom_bar(stat = "identity", show.legend = FALSE) + 
+      scale_x_continuous(breaks = -dimportance$ORDER, labels = dimportance$NAME)+
+      theme(axis.text.y = element_text(size = 15, hjust = 0.5, vjust =0.1), axis.text.x = element_text(size = 15, hjust = 0.5, vjust =0.1), axis.title.y = element_text(size = 15, hjust = 0.5, vjust =0.1), axis.title.x =  element_text(size = 15, hjust = 0.5, vjust =0.1))+
+      labs(y = "", x = "") + 
+      ylim (c(0, 0.5)) +
+      coord_flip()
+    
+    ggsave(paste(prout, "ImportanceDescRF_CV10.png", sep = ""), width = 6,height = 6, dpi = 300)
+    
+    
     return(outmodelCV)
   }
   
@@ -1436,11 +1476,11 @@ RFregCV = function(lfolds, ntree, mtry, dcluster, prout){
   p = ggplot(dpred, aes(Yreal, Ypredict))+
     geom_point(size=1.5, colour="black", shape=21) + 
     geom_text(x=-2.1, y=2.2, label = paste("R2=",round(valr2,2), sep = ""), size = 8)+
-    labs(x = "pAff", y = "Predicted pAff") +
+    labs(x = "Experimental pMIC (mol/l)", y = "Predicted pMIC (mol/l)")  +
     theme(axis.text.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.text.x = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.x =  element_text(size = 25, hjust = 0.5, vjust =0.1))+
-    xlim (c(4, 12)) +
+    xlim (c(3, 8)) +
     geom_segment(aes(x = 4, y = 4, xend = 12, yend = 12), linetype=2, size = 0.1) + 
-    ylim (c(4, 12)) 
+    ylim (c(3, 8)) 
   ggsave(paste(prout, "PerfRFregpoint_CV10.png", sep = ""), width = 6,height = 6, dpi = 300)
   
   
@@ -1454,13 +1494,13 @@ RFregCV = function(lfolds, ntree, mtry, dcluster, prout){
   p = ggplot(dpred, aes(Yreal, Ypredict, label=rownames(dpred)))+
     geom_point(size=1.5, colour="black", shape=21) + 
     geom_text(x=-2.1, y=2.2, label = paste("R2=",round(valr2,2), sep = ""), size = 8)+
-    labs(x = "pAff", y = "Predicted pAff") +
+    labs(x = "Experimental pMIC (mol/l)", y = "Predicted pMIC (mol/l)")  +
     geom_text(size = 2.6, aes(label= paste(rownames(dpred), "^(", Vcluster, ")", sep = "")), parse = TRUE, color="black", nudge_y = 0.06) + 
-    labs(x = "pAff", y = "Predict pAff") + 
+    labs(x = "Experimental pMIC (mol/l)", y = "Predicted pMIC (mol/l)")  + 
     theme(axis.text.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.text.x = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.x =  element_text(size = 25, hjust = 0.5, vjust =0.1))+
-    xlim (c(4, 12)) +
+    xlim (c(3, 8)) +
     geom_segment(aes(x = 4, y = 4, xend = 12, yend = 12), linetype=2, size = 0.1) + 
-    ylim (c(4, 12)) 
+    ylim (c(3, 8)) 
   print(p)
   ggsave(paste(prout, "PerfRFregname_CV10.png", sep = ""), width = 8,height = 8, dpi = 300)
 
@@ -1473,6 +1513,43 @@ RFreg = function (dtrain, dtest, ntree, mtry, dcluster, prout){
   pmodel = paste(prout, "model.RData", sep = "")
   if(file.exists(pmodel)){
     load(pmodel)
+    
+    valr2train = outmodel$train[1]
+    valr2test = outmodel$test[1]
+    
+    dpred = read.csv(paste(prout, "perfTestRFRegPred.csv", sep = " "), header = TRUE)
+    #colnames(dpred) = c("Yreal", "Ypredict")
+    dpred = as.data.frame(dpred)
+    
+    
+    theme_set(theme_grey())
+    p = ggplot(dpred, aes(Yreal, Ypredict))+
+      geom_point(size=1.5, colour="black", shape=21) + 
+      geom_text(x=4.1, y=7.7, label = paste("R2=",round(valr2test,2), sep = ""), size = 8)+
+      labs(x = "Experimental pMIC", y = "Predicted pMIC") +
+      theme(axis.text.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.text.x = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.x =  element_text(size = 25, hjust = 0.5, vjust =0.1))+
+      xlim (c(3.5, 8)) +
+      geom_segment(aes(x = 3.5, y = 3.5, xend = 8, yend = 8), linetype=1, size = 0.1) + 
+      ylim (c(3.5, 8))
+    ggsave(paste(prout, "PerfRFregpoint_Test.png", sep = ""), width = 6,height = 6, dpi = 300)
+    
+    
+    dpred = read.csv(paste(prout, "perfTrainRFRegPred.csv", sep = " "), header = TRUE)
+    dpred = as.data.frame(dpred)
+    
+    
+    theme_set(theme_grey())
+    p = ggplot(dpred, aes(Yreal, Ypredict))+
+      geom_point(size=1.5, colour="black", shape=21) + 
+      geom_text(x=4.1, y=7.7, label = paste("R2=",round(valr2train,2), sep = ""), size = 8)+
+      labs(x = "Experimental pMIC", y = "Predicted pMIC") +
+      theme(axis.text.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.text.x = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.x =  element_text(size = 25, hjust = 0.5, vjust =0.1))+
+      xlim (c(3.5, 8)) +
+      geom_segment(aes(x = 3.5, y = 3.5, xend = 8, yend = 8), linetype=1, size = 0.1) + 
+      ylim (c(3.5, 8))
+    ggsave(paste(prout, "PerfRFregpoint_Train.png", sep = ""), width = 6,height = 6, dpi = 300)
+    
+    
     return(outmodel) 
   }
   
@@ -1578,11 +1655,11 @@ RFreg = function (dtrain, dtest, ntree, mtry, dcluster, prout){
   p = ggplot(dpred, aes(Yreal, Ypredict))+
     geom_point(size=1.5, colour="black", shape=21) + 
     geom_text(x=5, y=11.5, label = paste("R2=",round(r2test,2), sep = ""), size = 8)+
-    labs(x = "pAff", y = "Predicted pAff") +
-    xlim (c(4, 12)) +
+    labs(x = "Experimental pMIC (mol/l)", y = "Predicted pMIC (mol/l)")  +
+    ylim (c(3, 8)) +
     theme(axis.text.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.text.x = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.x =  element_text(size = 25, hjust = 0.5, vjust =0.1))+
     geom_segment(aes(x = 4, y = 4, xend = 12, yend = 12), linetype=2, size = 0.1) + 
-    ylim (c(4, 12)) 
+    ylim (c(3, 8)) 
   #print(p)
   ggsave(paste(prout, "PerfRFregpoint_Test.png", sep = ""), width = 6,height = 6, dpi = 300)
   
@@ -1600,11 +1677,11 @@ RFreg = function (dtrain, dtest, ntree, mtry, dcluster, prout){
     geom_text(x=5, y=11.5, label = paste("R2=",round(r2test,2), sep = ""), size = 8)+
     labs(x = "pAff", y = "Predicted pAff") +
     geom_text(size = 2.6, aes(label= paste(rownames(dpred), "^(", Vcluster, ")", sep = "")), parse = TRUE, color="black", nudge_y = 0.06) + 
-    labs(x = "Real pAff", y = "Predict pAff") + 
+    labs(x = "Experimental pMIC (mol/l)", y = "Predicted pMIC (mol/l)") + 
     theme(axis.text.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.text.x = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.x =  element_text(size = 25, hjust = 0.5, vjust =0.1))+
-    xlim (c(4, 12)) +
+    ylim (c(3, 8))  +
     geom_segment(aes(x = 4, y = 4, xend = 12, yend = 12), linetype=2, size = 0.1) + 
-    ylim (c(4, 12)) 
+    ylim (c(3, 8))  
   #print(p)
   ggsave(paste(prout, "PerfRFregname_Test.png", sep = ""), width = 8,height = 8, dpi = 300)
   return(outmodel)

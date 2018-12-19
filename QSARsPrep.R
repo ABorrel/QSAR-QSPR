@@ -18,6 +18,17 @@ typeAff = args[8]
 nbNA = as.integer(args[9])
 
 
+
+#pdesc = "/home/borrela2/interference/PUBCHEM/411/descMat"
+#pdata = "/home/borrela2/interference/PUBCHEM/411/QSAR/Aff/actClass.txt"
+#prout = "/home/borrela2/interference/PUBCHEM/411/QSAR/Aff/"
+#valcor = "0.9"
+#maxquantile = 90 
+#proptraintest =0.15
+#logaff =0 
+#typeAff = "All" 
+#nbNA =1000
+
 #pdesc = "/home/borrela2/interference/Desc/tableDesc1D2DOpera"
 #pdata = "/home/borrela2/interference/spDataAnalysis/QSARclassCrossColor/1/crossColor/AC50_all"
 #prout = "/home/borrela2/interference/spDataAnalysis/QSARclassCrossColor/1/crossColor/"
@@ -37,6 +48,17 @@ nbNA = as.integer(args[9])
 #maxquantile = 80
 #proptraintest = 0.15
 #typeAff = "All"
+
+
+#pdesc = "/home/borrela2/interference/PUBCHEM/411/descMat"
+#pdata = "/home/borrela2/interference/PUBCHEM/411/QSAR/Aff/actClass.txt"
+#prout = "/home/borrela2/interference/PUBCHEM/411/QSAR/Aff/"
+#valcor = 0.85
+#maxquantile = 90 
+#proptraintest = 0.15
+#logaff = 0
+#typeAff = "All"
+#nbNA = 10000
 
 
 ##############################
@@ -62,16 +84,18 @@ print(paste("Data after filtering: dim = ", dim(dglobal)[1], dim(dglobal)[2], se
 # Opening
 daffinity = read.csv(pdata, sep = "\t", header = TRUE)
 rownames(daffinity) = daffinity[,1]
-
 #select data by type of affinity
+
 if(typeAff != "All"){
   iselect = which(daffinity[,which(colnames(daffinity) == "Type")] == typeAff)
   daffinity = daffinity[iselect,]  
 }
 
+if(is.integer0(which(colnames(daffinity) == "Type")) == FALSE){# remove type col
+  daffinity = daffinity[,-which(colnames(daffinity) == "Type")]
+}
 #Remove NA on affinity
 daffinity = na.omit(daffinity)
-
 
 # transform #
 if(logaff == 1){
@@ -86,16 +110,19 @@ if(logaff == 1){
 lID = intersect(rownames(daffinity), rownames(dglobal))
 print(paste("NB ID selected, intersect aff and global: ", length(lID), sep = ""))
 dglobal = dglobal[lID,]
+
 daffinity = daffinity[lID,]
-
-
-# write global set
-write.csv(dglobal, paste(prout, "globalSet.csv", sep = ""))
 
 
 ##################
 # divide dataset #
 ##################
+
+# write global set
+write.csv(dglobal, paste(prout, "globalSet.csv", sep = ""))
+
+
+
 ltraintest = samplingDataFraction(dglobal, proptraintest)
 dtrain = ltraintest[[1]]
 dtest = ltraintest[[2]]
@@ -112,16 +139,37 @@ dtest = dtest[,ldesc]
 # Add affinity  #
 #################
 
-# training set
-Aff = daffinity[rownames(dtrain),2]
-dtrainglobal = cbind(dtrain, Aff)
-write.csv(dtrainglobal, paste(prout, "trainSet.csv", sep = ""))
 
-# test set
-Aff = daffinity[rownames(dtest),2]
-dtestglobal = cbind(dtest, Aff)
-write.csv(dtestglobal, paste(prout, "testSet.csv", sep = ""))
+if(dim(daffinity)[2] == 2){
+  # training set
+  Aff = daffinity[rownames(dtrain),2]
+  dtrainglobal = cbind(dtrain, Aff)
+  write.csv(dtrainglobal, paste(prout, "trainSet.csv", sep = ""))
   
-lcontrol = list(dtrainglobal, dtestglobal)
-controlDatasets(lcontrol, paste(prout, "qualitySplit", sep = ""))
+  # test set
+  Aff = daffinity[rownames(dtest),2]
+  dtestglobal = cbind(dtest, Aff)
+  write.csv(dtestglobal, paste(prout, "testSet.csv", sep = ""))
+  
+  lcontrol = list(dtrainglobal, dtestglobal)
+  controlDatasets(lcontrol, paste(prout, "qualitySplit", sep = ""))
+}else{
+  for(afftype in colnames(daffinity)[-1]){
+    print (afftype)
+    # training set
+    Aff = daffinity[rownames(dtrain),afftype]
+    dtrainglobal = cbind(dtrain, Aff)
+    write.csv(dtrainglobal, paste(prout, afftype, "_trainSet.csv", sep = ""))
+    
+    # test set
+    Aff = daffinity[rownames(dtest),afftype]
+    dtestglobal = cbind(dtest, Aff)
+    write.csv(dtestglobal, paste(prout, afftype, "_testSet.csv", sep = ""))
+    
+    lcontrol = list(dtrainglobal, dtestglobal)
+    controlDatasets(lcontrol, paste(prout, afftype, "_qualitySplit", sep = ""))
+    
+  }
+}
+
 

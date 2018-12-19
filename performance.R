@@ -35,6 +35,7 @@ drawROCCurve = function(vreal, vpred, pout){
 # change case of d or nd
 perftable = function (list_predict, list_real, verbose = 0){
   
+  
   nb_value = length (list_real)
   i = 1
   tp = 0
@@ -82,11 +83,19 @@ recall = function (tp, fn){
 }
 
 specificity = function (tn, fp){
-  return (tn/(tn + fp))
+  sp = tn/(tn + fp)
+  if(is.na(sp)){
+    sp = 0
+  }
+  return (sp)
 }
 
 sensibility = function (tp, fn){
-  return (tp/(tp + fn))
+  se = tp/(tp + fn)
+  if(is.na(se)){
+    se = 0
+  }
+  return (se)
 }
 
 
@@ -98,7 +107,11 @@ BCR = function (tp, tn, fp, fn){
 MCC = function (tp, tn, fp, fn){
   numerator = tp*tn-fp*fn
   denumerator = (tp+fp) * (tp+fn) * (tn+fp) * (tn+fn)
-  return (numerator / sqrt(denumerator))
+  mcc = numerator / sqrt(denumerator)
+  if(is.na(mcc)){
+    mcc = 0
+  }
+  return (mcc)
 }
 
 
