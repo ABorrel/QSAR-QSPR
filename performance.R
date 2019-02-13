@@ -18,30 +18,26 @@ drawROCCurve = function(vreal, vpred, pout){
     dROC = rbind(dROC, c(i, vperf[[2]], 1 - vperf[[3]]))
   }
   colnames(dROC) = c("Sep", "Sensitivity", "Specificity")
-  
   dROC = as.data.frame(dROC)
   
   p = ggplot(data = dROC, 
          aes(x = 1-Specificity, y = Sensitivity )) +
     geom_point()
-  
   ggsave(paste(pout, ".png", sep = ""), width = 10, height = 10, dpi = 300)  
-  
 }
 
 
 
 
 # change case of d or nd
-perftable = function (list_predict, list_real, verbose = 0){
-  
+perftable = function (list_predict, list_real, verbose = 1){
   
   nb_value = length (list_real)
   i = 1
-  tp = 0
-  fp = 0
-  tn = 0
-  fn = 0
+  tp = 0.0
+  fp = 0.0
+  tn = 0.0
+  fn = 0.0
   while(i <= nb_value ){
     if (list_predict[i]==1){
       if (list_predict[i] == list_real[i]){
@@ -176,6 +172,7 @@ qualityShowModelSelection = function (list_des_model, coef, v_real_train, v_pred
 classPerf = function (v_real, v_predict){
   
   rate = perftable (v_predict, v_real)
+  print(rate)
   acc = accuracy(rate[1], rate[2], rate[3], rate[4])
   se = sensibility(rate[1], rate[4])
   sp = sensibility(rate[2], rate[3])
@@ -256,6 +253,38 @@ generateVect = function(proba_out_predict, threshold){
 }
 
 
+# multiclass performance
+multiClassPerf = function(v_real, v_predict){
+  v_real = as.character(v_real)
+  v_predict = as.character(v_predict)
+  
+  out = NULL
+    
+  # list of class
+  lclass = intersect(v_real, v_predict)
+  
+  for (classPred in lclass){
+    vreal_class = v_real
+    vpredict_class = v_predict
+    vreal_class[which(v_real == classPred)] = 1
+    vreal_class[which(v_real != classPred)] = 0
+    
+    vpredict_class[which(v_predict != classPred)] = 0
+    vpredict_class[which(v_predict == classPred)] = 1
+    ltemp = classPerf(vreal_class, vpredict_class)
+    print (ltemp)
+    out = rbind(out, c(ltemp[[1]], ltemp[[2]], ltemp[[3]], ltemp[[4]]))
+  }
+  rownames(out) = lclass
+  colnames(out) = c("Acc", "Se", "Sp", "MCC")
+  return(out)
+}
+
+#v_real = c("2", "1", "1", "4", "2", "2", "2", "3", "3", "3", "3", "4", "4", "4", "4", "4", "4", "4", "3", "3", "3", "3", "0", "3", "0", "0", "4", "3", "0", "3", "4", "0", "4", "4", "0", "0")
+#v_predit = c("2", "4", "0", "0", "0", "4", "4", "1", "0", "4", "2", "1", "0", "4", "4", "1", "4", "4", "3", "3", "3", "3", "0", "3", "0", "0", "4", "3", "0", "3", "4", "0", "4", "4", "0", "0")
+#multiClassPerf(v_real, v_predit)
+
+
 #########################
 #    PERF regression    #
 #########################
@@ -264,17 +293,14 @@ generateVect = function(proba_out_predict, threshold){
 vrmsep = function(dreal, dpredict){
   
   #dpredict = dpredict[rownames(dreal),]
-  
   i = 1
   imax = length(dreal)
-  
   valout = 0
   while(i <= imax){
     valout = valout + ((dreal[i] - dpredict[i])^2)
     i = i + 1
   }
   return(sqrt(valout))
-  
 }
 
 
