@@ -54,6 +54,10 @@ if(ML == "RFclass"){
 }else if(ML == "LDAclass"){
   lpred = predict(model, din)
   dout = cbind(lpred$posterior[,2], din$Aff)
+}else if(ML == "SVMclass"){
+  lpred = predict(model, din)
+  lpred = as.vector(lpred)
+  dout = cbind(lpred, din$Aff)
 }
 
 
