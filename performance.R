@@ -320,8 +320,8 @@ calR2 = function(dreal, dpredict){
   #print(dim(dperf))
   
   M = mean(dperf[,1])
-  SCEy = 0
-  SCEtot = 0
+  SCEy = 0.0
+  SCEtot = 0.0
   for (i in seq(1, dim(dperf)[1])){
     #print (i)
     SCEy = SCEy + (dperf[i, 1] - dperf[i, 2])*(dperf[i, 1] - dperf[i, 2])

@@ -246,8 +246,11 @@ if(modelNNreg ==1){
   vdecay = c(1e-6, 1e-4, 1e-2, 1e-1, 1)
   proutNN = paste(prout, "NNreg/", sep = "")
   dir.create(proutNN)
-  #vsize = c(1,2)
-  #vdecay = c(1e-6, 1e-4)
+  vsize = c(1,2,5,10)
+  vdecay = c(1e-6, 1e-4)
+  
+  print("AAAAA")
+  
   outNNCV = NNRegCV(lgroupCV, dcluster, vdecay, vsize, proutNN)
   outNN = NNReg(dtrain, dtest, dcluster,vdecay, vsize, proutNN)
 }

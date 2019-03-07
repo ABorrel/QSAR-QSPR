@@ -974,16 +974,22 @@ NNRegOptimizeGrid = function(dtrain, pfig, vdecay, vsize, nbCV, prout){
     
     gridOptimize = NULL
     for (d in vdecay){
+      print (d)
       optsize = NULL
       for(i in vsize){
+        print(i)
         #2000
-        modelNN = try(nnet(ddestrain, Aff, size = i, linout = T, maxit = 2000, MaxNWts = i*(dim(ddestrain)[2]+1)+i+1, decay = d), TRUE)
+        modelNN = tryCatch(nnet(ddestrain, Aff, size = i, linout = T, maxit = 2000, MaxNWts = i*(dim(ddestrain)[2]+1)+i+1, decay = d),
+                                    error = function(e) {return("NA")})
+        
+        #modelNN = try(nnet(ddestrain, Aff, size = i, linout = T, maxit = 200, MaxNWts = i*(dim(ddestrain)[2]+1)+i+1, decay = d), TRUE)
+        
         if(!is.character(modelNN)){
           vpred = predict (modelNN, ddesctest)
           valr2 = calR2(dtestAff, vpred)
-          if (valr2 < 0){
-            valr2 = 0
-          }
+          #if (valr2 < 0){
+          #  valr2 = 0
+          #}
         }else{
           valr2 = NA
         }
