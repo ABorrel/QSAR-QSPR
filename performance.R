@@ -30,7 +30,7 @@ drawROCCurve = function(vreal, vpred, pout){
 
 
 # change case of d or nd
-perftable = function (list_predict, list_real, verbose = 1){
+perftable = function (list_predict, list_real, verbose = 0){
   
   nb_value = length (list_real)
   i = 1
@@ -172,7 +172,7 @@ qualityShowModelSelection = function (list_des_model, coef, v_real_train, v_pred
 classPerf = function (v_real, v_predict){
   
   rate = perftable (v_predict, v_real)
-  print(rate)
+  #print(rate)
   acc = accuracy(rate[1], rate[2], rate[3], rate[4])
   se = sensibility(rate[1], rate[4])
   sp = sensibility(rate[2], rate[3])
@@ -272,7 +272,6 @@ multiClassPerf = function(v_real, v_predict){
     vpredict_class[which(v_predict != classPred)] = 0
     vpredict_class[which(v_predict == classPred)] = 1
     ltemp = classPerf(vreal_class, vpredict_class)
-    print (ltemp)
     out = rbind(out, c(ltemp[[1]], ltemp[[2]], ltemp[[3]], ltemp[[4]]))
   }
   rownames(out) = lclass
