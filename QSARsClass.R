@@ -18,6 +18,12 @@ prout = args[4]
 nbCV = as.integer(args[5])
 
 
+#ptrain = "/home/borrela2/cancer/BBN/ModelAssays/RF_muta_biclass_MCC/train.csv" 
+#ptest = "/home/borrela2/cancer/BBN/ModelAssays/RF_muta_biclass_MCC/test.csv" 
+#pcluster = "0"
+#prout = "/home/borrela2/cancer/BBN/ModelAssays/RF_muta_biclass_MCC/"
+#nbCV = 5
+
 
 # to test
 #ptrain = "/home/borrela2/imatinib/results/analysis/QSARs/Lig2D/trainSet.csv"
@@ -35,7 +41,7 @@ modelSVMclass = 1
 modelRFclass = 1
 modelLDAclass = 1
 modelCartclass = 1
-modelNNclass = 0
+modelNNclass = 1
 chemmodlabclass = 0
 
 
@@ -71,6 +77,8 @@ print("")
 dtrain = read.csv(ptrain, header = TRUE)
 rownames(dtrain) = dtrain[,1]
 dtrain = dtrain[,-1]
+# have to check the null variance
+dtrain = delSDNull(dtrain)
 
 # test set
 dtest = read.csv(ptest, header = TRUE)
@@ -121,12 +129,27 @@ if(modelCartclass == 1){
 
 
 if(modelSVMclass == 1){
-  prSVM = paste(prout, "SVMclass/", sep = "")
+  
+  prSVM = paste(prout, "SVMclass_linear/", sep = "")
   dir.create(prSVM)
   vgamma = 2^(-1:1)
   vcost = 2^(2:8)
-  outSVMCV = SVMClassCV(lgroupCV, vgamma, vcost, prSVM)
-  outSVM = SVMClassTrainTest(dtrain, dtest, vgamma, vcost, prSVM)
+  ksvm = "linear"
+  outSVMCV_linear = SVMClassCV(lgroupCV, vgamma, vcost, ksvm, prSVM)
+  outSVM_linear = SVMClassTrainTest(dtrain, dtest, vgamma, vcost, ksvm, prSVM)
+  
+  prSVM = paste(prout, "SVMclass_radial/", sep = "")
+  dir.create(prSVM)
+  ksvm = "radial"
+  outSVMCV_radial = SVMClassCV(lgroupCV, vgamma, vcost, ksvm, prSVM)
+  outSVM_radial = SVMClassTrainTest(dtrain, dtest, vgamma, vcost, ksvm, prSVM)
+  
+  prSVM = paste(prout, "SVMclass_sigmoid/", sep = "")
+  dir.create(prSVM)
+  ksvm = "sigmoid"
+  outSVMCV_sigmoid = SVMClassCV(lgroupCV, vgamma, vcost, ksvm, prSVM)
+  outSVM_sigmoid = SVMClassTrainTest(dtrain, dtest, vgamma, vcost, ksvm, prSVM)
+  
 }
 
 
@@ -151,6 +174,18 @@ if(modelLDAclass == 1){
 }
 
 
+if(modelNNclass == 1){
+  prNN = paste(prout, "NNclass/", sep = "")
+  dir.create(prNN)
+  #vsize = c(1,2,5,10)
+  #vdecay = c(1e-6, 1e-4, 1e-2, 1e-1, 1)
+  vsize = c(1,2,5)
+  vdecay = c(1e-1, 0.5, 1)
+  outNNCV = NNClassCV(lgroupCV, vsize, vdecay, prNN)
+  outNN = NNClassTrainTest(dtrain, dtest, vsize, vdecay, prNN)
+}
+
+
 #############################
 # merge table of perfomance #
 #############################
@@ -168,11 +203,31 @@ if(modelCartclass==1){
 }
 
 
+if(modelNNclass == 1){
+  perfCV = rbind(perfCV, outNNCV$CV)
+  perftrain = rbind(perftrain, outNN$train)
+  perfTest = rbind(perfTest, outNN$test)
+  rownameTable = append(rownameTable, "NN")
+}
+
+
 if(modelSVMclass == 1){
-  perfCV = rbind(perfCV, outSVMCV$CV)
-  perftrain = rbind(perftrain, outSVM$train)
-  perfTest = rbind(perfTest, outSVM$test)
-  rownameTable = append(rownameTable, "SVM")
+  # for 3 kernels
+  perfCV = rbind(perfCV, outSVMCV_linear$CV)
+  perftrain = rbind(perftrain, outSVM_linear$train)
+  perfTest = rbind(perfTest, outSVM_linear$test)
+  rownameTable = append(rownameTable, "SVM-linear")
+  
+  perfCV = rbind(perfCV, outSVMCV_radial$CV)
+  perftrain = rbind(perftrain, outSVM_radial$train)
+  perfTest = rbind(perfTest, outSVM_radial$test)
+  rownameTable = append(rownameTable, "SVM-radial")
+  
+  perfCV = rbind(perfCV, outSVMCV_sigmoid$CV)
+  perftrain = rbind(perftrain, outSVM_sigmoid$train)
+  perfTest = rbind(perfTest, outSVM_sigmoid$test)
+  rownameTable = append(rownameTable, "SVM-sigmoid")
+  
 }
 
 

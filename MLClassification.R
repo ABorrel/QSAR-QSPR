@@ -9,6 +9,7 @@ library(rpart.plot)
 library(e1071)
 library(ggplot2)
 #library(neuralnet)
+library(caret)
 library(nnet)
 library(clusterGeneration)
 library(stringr)
@@ -28,7 +29,7 @@ library(reshape2)
 #  SVM   #
 ##########
 
-SVMClassTrainTest = function(dtrain, dtest, vgamma, vcost, prout){
+SVMClassTrainTest = function(dtrain, dtest, vgamma, vcost, ksvm, prout){
   
   pmodel = paste(prout, "model.RData", sep = "")
   if(file.exists(pmodel)){
@@ -37,25 +38,19 @@ SVMClassTrainTest = function(dtrain, dtest, vgamma, vcost, prout){
   }
   
   
-  print(paste("==== SVM in train-test --- Automatic optimization CV-10====", sep = ""))
+  print(paste("====SVM in train-test --- Automatic optimization CV-10====", sep = ""))
   
   # optimisation on CV-10
-  modelsvm = SVMTuneClass(dtrain, vgamma, vcost, 10)
+  modelsvm = SVMTuneClass(dtrain, vgamma, vcost, ksvm, 10)
   
   predsvmtest = predict(modelsvm, dtest[,-c(which(colnames(dtest) == "Aff"))])
   predsvmtrain = predict(modelsvm, dtrain[,-c(which(colnames(dtrain) == "Aff"))])
-  
-  #fix proba
-  predsvmtrain[which(predsvmtrain < 0.5)] = 0
-  predsvmtrain[which(predsvmtrain >= 0.5)] = 1
-  predsvmtest[which(predsvmtest < 0.5)] = 0
-  predsvmtest[which(predsvmtest >= 0.5)] = 1
   
   names(predsvmtrain) = rownames(dtrain)
   names(predsvmtest) = rownames(dtest)
   
   # performances = train
-  dpredtrain = cbind(dtrain[,"Aff"], predsvmtrain)
+  dpredtrain = cbind(dtrain[,"Aff"], as.character(predsvmtrain))
   colnames(dpredtrain) = c("Real", "Predict")
   write.csv(dpredtrain, paste(prout, "TrainPred.csv", sep = ""))
   
@@ -66,7 +61,7 @@ SVMClassTrainTest = function(dtrain, dtest, vgamma, vcost, prout){
   mcctrain = lpreftrain[[4]]
   
   # performances = test
-  dpredtest = cbind(dtest[,"Aff"], predsvmtest)
+  dpredtest = cbind(dtest[,"Aff"], as.character(predsvmtest))
   colnames(dpredtest) = c("Real", "Predict")
   write.csv(dpredtest, paste(prout, "TestPred.csv", sep = ""))
   
@@ -112,7 +107,7 @@ SVMClassTrainTest = function(dtrain, dtest, vgamma, vcost, prout){
 } 
   
   
-SVMClassCV = function(lgroupCV, vgamma, vcost, prout){  
+SVMClassCV = function(lgroupCV, vgamma, vcost, ksvm, prout){  
   
   pmodel = paste(prout, "modelCV.RData", sep = "")
   if(file.exists(pmodel) == TRUE){
@@ -141,15 +136,15 @@ SVMClassCV = function(lgroupCV, vgamma, vcost, prout){
       }
     }
     
-    dtrain = dtrain 
-    modtune = tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost), tunecontrol = tune.control(sampling = "fix"))
+    dtrain$Aff = as.factor(dtrain$Aff)
+    modtune = tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost, type="nu-classification", kernel=ksvm), tunecontrol = tune.control(sampling = "fix"))
     
-    vpred = predict (modtune$best.model, dtest, type = "class")
+    vpred = predict (modtune$best.model, dtest, decision.values = TRUE)
+    vpred = as.double(vpred)
+    vpred[which(vpred == 1)] = 0
+    vpred[which(vpred == 2)] = 1
     y_proba = append(y_proba, vpred)
     
-    
-    vpred[which(vpred < 0.5)] = 0
-    vpred[which(vpred >= 0.5)] = 1
     
     y_predict = append(y_predict, vpred)
     y_real = append(y_real, dtest[,"Aff"])
@@ -184,7 +179,7 @@ SVMClassCV = function(lgroupCV, vgamma, vcost, prout){
 }
 
 
-SVMTuneClass = function(dtrain, vgamma, vcost, nbCV){
+SVMTuneClass = function(dtrain, vgamma, vcost, ksvm, nbCV){
   
   
   lfolds = samplingDataNgroup(dtrain, nbCV)
@@ -209,17 +204,21 @@ SVMTuneClass = function(dtrain, vgamma, vcost, nbCV){
     ddestrain = dtrain[,-c(which(colnames(dtrain) == "Aff"))]
     #ddestrain = scale(ddestrain)
     Aff = dtrain[,c("Aff")]
+    dtrain$Aff = as.factor(dtrain$Aff)
     
     
     #dtest = as.data.frame(scale(dtest))
     dtestAff = dtest[,"Aff"]
     #ddesctest = dtest[,-c(which(colnames(dtest) == "Aff"))]
     #ddesctest = scale(ddesctest, center = attr(ddestrain, 'scaled:center'), scale = attr(ddestrain, 'scaled:scale'))
-    modelsvm = tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost), tunecontrol = tune.control(sampling = "fix"))
+    modelsvm = tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost, type="nu-classification", kernel=ksvm), tunecontrol = tune.control(sampling = "fix"))
     modelsvm = modelsvm$best.model
-    vpred = predict(modelsvm, dtest, type = "class")
-    vpred[which(vpred < 0.5)] = 0
-    vpred[which(vpred >= 0.5)] = 1
+    vpred = predict(modelsvm, dtest, decision.values = TRUE)
+    
+    vpred = as.double(vpred)
+    vpred[which(vpred == 1 )] = 0
+    vpred[which(vpred == 2 )] = 1
+    
     
     lpreftest = classPerf(dtestAff, vpred)
     acctest = lpreftest[[1]]
@@ -235,6 +234,214 @@ SVMTuneClass = function(dtrain, vgamma, vcost, nbCV){
   return(lmodel[[which(lMCCbest == max(lMCCbest, na.rm = TRUE))]])
 }  
 
+
+
+#####################
+#  Neural network   #
+#####################
+
+NNClassTrainTest = function(dtrain, dtest, vsize, vdecay, prout){
+  
+  pmodel = paste(prout, "model.RData", sep = "")
+  if(file.exists(pmodel)){
+    load(pmodel)
+    return(outmodel) 
+  }
+  
+  
+  print(paste("====NN in train-test --- Automatic optimization CV-10====", sep = ""))
+  
+  # optimisation on CV-10
+  modelNN = NNTuneClass(dtrain, vsize, vdecay, 10)
+  
+  predsvmtest = predict(modelNN, dtest[,-c(which(colnames(dtest) == "Aff"))])
+  predsvmtrain = predict(modelNN, dtrain[,-c(which(colnames(dtrain) == "Aff"))])
+  
+  #fix proba => error
+  
+  predsvmtrain[which(predsvmtrain < 0.5)] = 0
+  predsvmtrain[which(predsvmtrain >= 0.5)] = 1
+  predsvmtest[which(predsvmtest < 0.5)] = 0
+  predsvmtest[which(predsvmtest >= 0.5)] = 1
+  
+  names(predsvmtrain) = rownames(dtrain)
+  names(predsvmtest) = rownames(dtest)
+  
+  # performances = train
+  dpredtrain = cbind(dtrain[,"Aff"], as.character(predsvmtrain))
+  colnames(dpredtrain) = c("Real", "Predict")
+  write.csv(dpredtrain, paste(prout, "TrainPred.csv", sep = ""))
+  
+  lpreftrain = classPerf(dpredtrain[,1], dpredtrain[,2])
+  acctrain = lpreftrain[[1]]
+  setrain = lpreftrain[[2]]
+  sptrain = lpreftrain[[3]]
+  mcctrain = lpreftrain[[4]]
+  
+  # performances = test
+  dpredtest = cbind(dtest[,"Aff"], as.character(predsvmtest))
+  colnames(dpredtest) = c("Real", "Predict")
+  write.csv(dpredtest, paste(prout, "TestPred.csv", sep = ""))
+  
+  lpreftest = classPerf(dtest[,"Aff"], predsvmtest)
+  acctest = lpreftest[[1]]
+  setest = lpreftest[[2]]
+  sptest = lpreftest[[3]]
+  mcctest = lpreftest[[4]]
+  
+  print("===== NN model train-Test =====")
+  #print(modelpls$coefficients)
+  print(paste("Perf training (dim= ", dim(dtrain)[1], "*", dim(dtrain)[2], "):", sep = ""))
+  print(paste("ACC train=", acctrain))
+  print(paste("Se train=", setrain))
+  print(paste("Sp train=", sptrain))
+  print(paste("MCC train=", mcctrain))
+  print("")
+  print("")
+  
+  
+  print(paste("Perf test (dim=", dim(dtest)[1], "*", dim(dtest)[2], "):", sep = ""))
+  print(paste("ACC test=", acctest))
+  print(paste("Se test=", setest))
+  print(paste("Sp test=", sptest))
+  print(paste("MCC test=", mcctest))
+  print("")
+  print("")
+  
+  
+  perftrain = c(acctrain, setrain, sptrain, mcctrain)
+  names(perftrain) = c("ACC", "SE", "SP", "MCC")
+  
+  perftest = c(acctest, setest, sptest, mcctest)
+  names(perftest) = c("ACC", "SE", "SP", "MCC")
+  
+  outmodel = list()
+  outmodel$train = perftrain
+  outmodel$test = perftest
+  outmodel$model = modelNN
+  
+  save(outmodel, file = paste(prout, "model.RData", sep = ""))
+  return(outmodel)
+} 
+
+
+NNClassCV = function(lgroupCV, vsize, vdecay, prout){  
+  
+  pmodel = paste(prout, "modelCV.RData", sep = "")
+  if(file.exists(pmodel) == TRUE){
+    load(pmodel)
+    return(outmodelCV)
+  }
+  
+  
+  print(paste("== NN in CV with ", length(lgroupCV), " Automatic optimization by folds ==", sep = ""))
+  
+  # data combination
+  k = 1
+  my.grid <- expand.grid(.decay = vdecay, .size = vsize)
+  kmax = length(lgroupCV)
+  y_predict = NULL
+  y_real = NULL
+  y_proba = NULL
+  while(k <= kmax){
+    dtrain = NULL
+    dtest = NULL
+    for (m in seq(1:kmax)){
+      if (m == k){
+        dtest = lgroupCV[[m]]
+      }else{
+        dtrain = rbind(dtrain, lgroupCV[[m]])
+      }
+    }
+    
+    #dtrain$Aff = as.factor(dtrain$Aff)
+    nnfit = train(Aff ~ ., data = dtrain,
+                  method = "nnet", maxit = 75, tuneGrid = my.grid, trace = F, linout = 1) 
+    
+    vpred = predict (nnfit, dtest)
+    #vpred = as.double(vpred)
+    
+    y_proba = append(y_proba, vpred)
+    vpred[which(vpred >= 0.5)] = 1
+    vpred[which(vpred <= 0.5)] = 0
+    
+    y_predict = append(y_predict, vpred)
+    y_real = append(y_real, dtest[,"Aff"])
+    k = k + 1
+  }
+  
+  # performances
+  lpref = classPerf(y_real, y_predict)
+  acc = lpref[[1]]
+  se = lpref[[2]]
+  sp = lpref[[3]]
+  mcc = lpref[[4]]
+  
+  dpred = cbind(y_proba, y_real)
+  colnames(dpred) = c("Predict", "Real")
+  write.csv(dpred, file = paste(prout, "CVPred-", length(lgroupCV), ".csv", sep = ""))
+  
+  print("Perfomances in CV")
+  print(paste("acc=", acc, sep = ""))
+  print(paste("se=", se, sep = ""))
+  print(paste("sp=", sp, sep = ""))
+  print(paste("mcc=", mcc, sep = "")) 
+  print("")
+  print("")
+  
+  outmodelCV = list()
+  lscore = c(acc, se, sp, mcc)
+  names(lscore) = c("ACC", "SE", "SP", "MCC")
+  outmodelCV$CV = lscore
+  save(outmodelCV, file = paste(prout, "modelCV.RData", sep = ""))
+  return(outmodelCV)  
+}
+
+
+NNTuneClass = function(dtrain, vsize, vdecay, nbCV){
+  
+  
+  lfolds = samplingDataNgroup(dtrain, nbCV)
+  lmodel = list()
+  lMCCbest = NULL
+  
+  my.grid <- expand.grid(.decay = vdecay, .size = vsize)
+  k = 1
+  kmax = length(lfolds)
+  while(k <= kmax){
+    dtrain = NULL
+    dtest = NULL
+    for (m in seq(1:kmax)){
+      lcpd = rownames(lfolds[[m]])
+      if (m == k){
+        dtest = as.data.frame(lfolds[[m]])
+      }else{
+        dtrain = rbind(dtrain, lfolds[[m]])
+      }
+    }
+    
+    nnfit = train(Aff ~ ., data = dtrain,
+                  method = "nnet", maxit = 75, tuneGrid = my.grid, trace = F, linout = 1) 
+    
+    vpred = predict (nnfit, dtest)
+    #vpred = as.double(vpred)
+    
+    vpred[which(vpred >= 0.5)] = 1
+    vpred[which(vpred <= 0.5)] = 0
+    
+    lpreftest = classPerf(dtest$Aff, vpred)
+    acctest = lpreftest[[1]]
+    setest = lpreftest[[2]]
+    sptest = lpreftest[[3]]
+    mcctest = lpreftest[[4]]
+    
+    # optimize with MCC
+    lMCCbest = append(lMCCbest, mcctest)
+    lmodel[[k]] =  nnfit
+    k = k + 1 
+  }
+  return(lmodel[[which(lMCCbest == max(lMCCbest, na.rm = TRUE))]])
+}  
 
 
 
@@ -705,6 +912,8 @@ LDAClassCV = function(lfolds, prout){
       }
     }
     
+    #dtrain$Aff = as.factor(dtrain$Aff)
+    dtrain = delSDNull(dtrain) # check variance null to remove colinear variable
     modelLDA = lda( Aff~., data = dtrain, type = "class")
     vpred = predict (modelLDA, dtest)
     vproba = vpred$posterior[,2]
