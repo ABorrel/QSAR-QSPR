@@ -38,7 +38,7 @@ SVMClassTrainTest = function(dtrain, dtest, vgamma, vcost, ksvm, prout){
   }
   
   
-  print(paste("====SVM in train-test --- Automatic optimization CV-10====", sep = ""))
+  print(paste("====SVM-", ksvm, " in train-test --- Automatic optimization CV-10====", sep = ""))
   
   # optimisation on CV-10
   modelsvm = SVMTuneClass(dtrain, vgamma, vcost, ksvm, 10)
@@ -117,7 +117,7 @@ SVMClassCV = function(lgroupCV, vgamma, vcost, ksvm, prout){
   
   
   
-  print(paste("== SVM in CV with ", length(lgroupCV), " Automatic optimization by folds", sep = ""))
+  print(paste("== SVM-", ksvm , " in CV with ", length(lgroupCV), " Automatic optimization by folds", sep = ""))
   
   # data combination
   k = 1
@@ -137,7 +137,15 @@ SVMClassCV = function(lgroupCV, vgamma, vcost, ksvm, prout){
     }
     
     dtrain$Aff = as.factor(dtrain$Aff)
-    modtune = tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost, type="nu-classification", kernel=ksvm), tunecontrol = tune.control(sampling = "fix"))
+    
+    
+    modtune = tryCatch(tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost, type="nu-classification", kernel=ksvm), tunecontrol = tune.control(sampling = "fix")),
+                       error = function(e) {return("NA")})
+    
+    
+    if(is.character(modtune)){
+      modtune = tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost, type="C-classification", kernel=ksvm), tunecontrol = tune.control(sampling = "fix"))
+    }
     
     vpred = predict (modtune$best.model, dtest, decision.values = TRUE)
     vpred = as.double(vpred)
@@ -211,7 +219,15 @@ SVMTuneClass = function(dtrain, vgamma, vcost, ksvm, nbCV){
     dtestAff = dtest[,"Aff"]
     #ddesctest = dtest[,-c(which(colnames(dtest) == "Aff"))]
     #ddesctest = scale(ddesctest, center = attr(ddestrain, 'scaled:center'), scale = attr(ddestrain, 'scaled:scale'))
-    modelsvm = tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost, type="nu-classification", kernel=ksvm), tunecontrol = tune.control(sampling = "fix"))
+    
+    modelsvm = tryCatch(tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost, type="nu-classification", kernel=ksvm), tunecontrol = tune.control(sampling = "fix")),
+                       error = function(e) {return("NA")})
+    
+    
+    if(is.character(modelsvm)){
+      modelsvm = tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost, type="C-classification", kernel=ksvm), tunecontrol = tune.control(sampling = "fix"))
+    }
+    
     modelsvm = modelsvm$best.model
     vpred = predict(modelsvm, dtest, decision.values = TRUE)
     
@@ -231,6 +247,8 @@ SVMTuneClass = function(dtrain, vgamma, vcost, ksvm, nbCV){
     lmodel[[k]] =  modelsvm
     k = k + 1 
   }
+  #print(lMCCbest)
+  #print(which(lMCCbest == max(lMCCbest, na.rm = TRUE)))
   return(lmodel[[which(lMCCbest == max(lMCCbest, na.rm = TRUE))]])
 }  
 
@@ -440,6 +458,7 @@ NNTuneClass = function(dtrain, vsize, vdecay, nbCV){
     lmodel[[k]] =  nnfit
     k = k + 1 
   }
+  print(lMCCbest)
   return(lmodel[[which(lMCCbest == max(lMCCbest, na.rm = TRUE))]])
 }  
 
