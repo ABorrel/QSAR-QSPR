@@ -37,11 +37,11 @@ nbCV = as.integer(args[5])
 
 # model classification #
 ########################
-modelSVMclass = 1
+modelSVMclass = 0
 modelRFclass = 1
-modelLDAclass = 1
-modelCartclass = 1
-modelNNclass = 1
+modelLDAclass = 0
+modelCartclass = 0
+modelNNclass = 0
 chemmodlabclass = 0
 
 
