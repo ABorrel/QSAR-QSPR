@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-source("~/development/Rglobal/source/dataManager.R")
+source("./../../Rglobal/source/dataManager.R")
 source("MLClassification.R")
 source("performance.R")
 
@@ -18,11 +18,11 @@ prout = args[4]
 nbCV = as.integer(args[5])
 
 
-#ptrain = "/home/borrela2/cancer/BBN/ModelAssays/RF_muta_biclass_MCC/train.csv" 
-#ptest = "/home/borrela2/cancer/BBN/ModelAssays/RF_muta_biclass_MCC/test.csv" 
+#ptrain = "C:/Users/Aborrel/research/ILS/HERG/results/QSAR/1/train.csv" 
+#ptest = "C:/Users/Aborrel/research/ILS/HERG/results/QSAR/1/test.csv" 
 #pcluster = "0"
-#prout = "/home/borrela2/cancer/BBN/ModelAssays/RF_muta_biclass_MCC/"
-#nbCV = 5
+#prout = "C:/Users/Aborrel/research/ILS/HERG/results/QSAR/1/"
+#nbCV = 10
 
 
 # to test

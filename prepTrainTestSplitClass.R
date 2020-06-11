@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-source ("~/development/Rglobal/source/dataManager.R")
+source ("./../../Rglobal/source/dataManager.R")
 
 
 ################
@@ -10,6 +10,10 @@ args <- commandArgs(TRUE)
 pdesc = args[1]
 splitFact = as.double(args[2])
 prout = args[3]
+
+#pdesc = "C:/Users/Aborrel/research/ILS/HERG/results/QSAR/1/desc_Class.csv"
+#prout = "C:/Users/Aborrel/research/ILS/HERG/results/QSAR/1/"
+#splitFact = 0.15
 
 din = read.csv(pdesc, sep = "\t", header = TRUE)
 
