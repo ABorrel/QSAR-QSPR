@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-source("./../../Rglobal/source/dataManager.R")
+source("./../R_toolbox/dataManager.R")
 source("MLClassification.R")
 source("performance.R")
 

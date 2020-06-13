@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-source("~/development/Rglobal/source/dataManager.R")
+source("./../R_toolbox/dataManager.R")
 source("MachinLearning.R")
 source("performance.R")
 source("dataManager.R")
@@ -21,13 +21,13 @@ nbCV = as.integer(args[5])
 
 
 # to test
-ptrain = "/home/aborrel/imitanib/results/analysis/QSARs/Lig/trainSet.csv"
-ptest = "/home/aborrel/imitanib/results/analysis/QSARs/Lig/testSet.csv"
-pcluster = "0"
-prout = "/home/aborrel/imitanib/results/analysis/QSARs/Lig/"
+#ptrain = "/home/aborrel/imitanib/results/analysis/QSARs/Lig/trainSet.csv"
+#ptest = "/home/aborrel/imitanib/results/analysis/QSARs/Lig/testSet.csv"
+#pcluster = "0"
+#prout = "/home/aborrel/imitanib/results/analysis/QSARs/Lig/"
 
 # cross validation 10
-nbCV = 10
+#nbCV = 10
 
 
 # model regression #
