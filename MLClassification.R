@@ -1092,7 +1092,7 @@ barplotDescriptor = function(res.lda, prout, data_train){
   #legend("topright",legend=c("coef >0","coef <0"), col=c(2,4),lty=2, cex = 2.75)
   dev.off ()
   
-  write.table(coef.sort, file = paste(prout, "ImportanceDesc"), sep = "\t")
+  write.table(coef.sort, file = paste(prout, "ImportanceDesc", sep = ""), sep = "\t")
   
 }
 
