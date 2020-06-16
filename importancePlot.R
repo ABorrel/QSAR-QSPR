@@ -7,9 +7,9 @@ library(ggplot2)
 ################
 args <- commandArgs(TRUE)
 pImportance = args[1]
-nbconsidered = args[2]
+nbconsidered = as.integer(args[2])
 
-#pImportance = "/home/borrela2/interference/spDataAnalysis/QSARclassCrossColor/descImportance/ImportanceLDA_crossColor"
+#pImportance = "C:/Users/Aborrel/research/ILS/HERG/results/QSAR/Merge_involvedDesc/RF/Av_importance"
 #nbconsidered = 10
 
 dimportance = read.table(pImportance, sep = "\t", header = TRUE)
