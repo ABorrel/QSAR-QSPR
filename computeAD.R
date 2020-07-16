@@ -1,0 +1,226 @@
+#!/usr/bin/env Rscript
+library(ggplot2)
+library(factoextra)
+source ("../R_toolbox/PCAdrawer.R")
+
+generatePCAcoords = function(din){
+  
+  dinScale = scale(din)
+  data.cor=cor(dinScale)
+  data.eigen=eigen(data.cor)
+  lambda = data.eigen$values
+  var_cap = lambda/sum(lambda)*100
+  cp = data.eigen$vectors
+  rownames (cp) = colnames (dinScale)
+  colnames (cp) = colnames (dinScale)
+  data_plot = as.matrix(dinScale)%*%cp
+  
+  return(list(data_plot, var_cap, cp))
+}
+
+
+computeDistFromCenter = function(coord_centroid, res.pca, name_plot=""){
+  
+  # plot distribution distance centroid for the all set
+  l_dist = NULL
+  i = 1
+  imax = dim(res.pca)[1]
+  
+  while(i <= imax){
+    x = rbind(coord_centroid, res.pca[i,])
+    d = dist(x)
+    l_dist = append(l_dist, d)
+    i = i + 1 
+  }
+  
+  l_n = rownames(res.pca)
+  d_dist = cbind(l_n, l_dist)
+  d_dist = cbind(l_n, d_dist)
+  colnames(d_dist) = c("ID", "ID-2", "dist")
+  rownames(d_dist) = l_n
+  d_dist = as.data.frame(d_dist)
+  d_dist$dist = as.double(as.character(d_dist$dist))
+  
+  if(name_plot != ""){
+    ggplot(d_dist, aes(x=dist)) +
+      geom_histogram(aes(y=..density..), position="identity", alpha=0.20, color="blue", fill="blue")+
+      geom_density(alpha=0.3, fill="blue")+
+      theme(text = element_text(size=19))+
+      scale_color_manual(values=c("#cde2ff")) + 
+      labs(title="",x="Distance to centroid", y = "Density")
+    ggsave(paste(pr_out, "hist_", name_plot, "_dist.png", sep = ""),  width = 8, height = 7, dpi = 300, bg="transparent")
+  }
+  return(d_dist)
+}
+
+
+
+computeZscore = function(d_dist, M, SD, name_plot=""){
+  
+  #z-score = (x-μ)/σ
+  #x is a raw score to be standardized; 
+  #μ is the mean of the population; 
+  #σ is the standard deviation of the population.
+  
+  l_dist = d_dist$dist
+  l_n = rownames(d_dist)
+  l_zscores = (l_dist - M)/SD
+  l_zscores = abs(l_zscores)
+  d_Zscore = cbind(l_n, l_zscores)
+  d_Zscore = cbind(l_n, d_Zscore)
+  colnames(d_Zscore) = c("ID", "ID-2", "Zscore")
+  rownames(d_Zscore) = l_n
+  d_Zscore = as.data.frame(d_Zscore)
+  d_Zscore$Zscore = as.double(as.character(d_Zscore$Zscore))
+  
+  if(name_plot != ""){
+    ggplot(d_Zscore, aes(x=Zscore)) +
+      geom_histogram(aes(y=..density..), position="identity", alpha=0.20, color="blue", fill="blue")+
+      geom_density(alpha=0.3, fill="blue") +
+      theme(text = element_text(size=19)) +
+      scale_color_manual(values=c("#cde2ff")) + 
+      labs(title="",x="Z-scores to centroid", y = "Density")
+    ggsave(paste(pr_out, "hist_", name_plot, "_Zscore.png", sep = ""),  width = 8, height = 7, dpi = 300, bg="transparent")
+  }
+  return(d_Zscore)
+}
+
+
+
+addTrans <- function(color,trans)
+{
+  # This function adds transparancy to a color.
+  # Define transparancy with an integer between 0 and 255
+  # 0 being fully transparant and 255 being fully visable
+  # Works with either color and trans a vector of equal length,
+  # or one of the two of length 1.
+  
+  if (length(color)!=length(trans)&!any(c(length(color),length(trans))==1)) stop("Vector lengths not correct")
+  if (length(color)==1 & length(trans)>1) color <- rep(color,length(trans))
+  if (length(trans)==1 & length(color)>1) trans <- rep(trans,length(color))
+  
+  num2hex <- function(x)
+  {
+    hex <- unlist(strsplit("0123456789ABCDEF",split=""))
+    return(paste(hex[(x-x%%16)/16+1],hex[x%%16+1],sep=""))
+  }
+  rgb <- rbind(col2rgb(color),trans)
+  res <- paste("#",apply(apply(rgb,2,num2hex),2,paste,collapse=""),sep="")
+  return(res)
+}
+
+
+################
+#     MAIN     #
+################
+
+args <- commandArgs(TRUE)
+p_desc_model = args[1]
+p_desc_test = args[2]
+pr_out = args[3]
+
+
+#p_desc_model = "../../HERG/results/QSAR/trainGlobal.csv"
+#p_desc_test = "../../HERG/results/QSAR/test.csv"
+#pr_out = "../../HERG/results/QSAR/AD/"
+
+
+ddesc1 = read.csv(p_desc_model, sep = ",", row.names = 1)
+ddesc2 = read.csv(p_desc_test, sep = ",", row.names = 1)
+
+# remove coloum SMILES and aff 
+if(exists("Aff", where=ddesc1)){
+  ddesc1 = ddesc1[,-which(colnames(ddesc1)=="Aff")]
+}
+
+if(exists("Aff", where=ddesc2)){
+  ddesc2 = ddesc2[,-which(colnames(ddesc2)=="Aff")]
+}
+
+if(exists("SMILES", where=ddesc1)){
+  ddesc1 = ddesc1[,-which(colnames(ddesc1)=="SMILES")]
+}
+
+if(exists("SMILES", where=ddesc2)){
+  ddesc2 = ddesc2[,-which(colnames(ddesc2)=="SMILES")]
+}
+
+
+res.pca <- prcomp(ddesc1, scale = TRUE)
+
+# analyse optmial number of CP
+p = fviz_eig(res.pca, addlabels = TRUE)
+ggsave(paste(pr_out, "CP_variability.png", sep = ""),  width = 6, height = 6, dpi = 300, bg="transparent")
+
+# optimial number of variable
+eig.val <- get_eigenvalue(res.pca)
+v_per = eig.val$variance.percent
+v_per = cbind(seq(1,length(v_per)), v_per)
+
+# with inflexion point
+#v_dist = NULL
+#for(i in seq(1,dim(v_per)[1])){
+#  d = sqrt(v_per[i,1] * v_per[i,1] + v_per[i,2] * v_per[i,2])
+#  v_dist = append(v_dist, d)
+#}
+
+#nb_CP = which(v_dist == min(v_dist))
+
+# with 80% variability explain
+nb_CP = which(eig.val$cumulative.variance.percent >80)[1]
+
+# modify with nb CP
+res.pca$x = res.pca$x[,seq(1,nb_CP)]
+
+PCAcoord = generatePCAcoords(ddesc1)
+var_cap = PCAcoord[[2]]
+
+# average each dimension
+coord_centroid = apply(res.pca$x, 2, "mean")
+
+# for training set
+d_dist = computeDistFromCenter(coord_centroid, res.pca$x, "trainning")
+M = mean(d_dist$dist)
+SD = sd(d_dist$dist)
+
+# transform in z-score
+d_zscore_train = computeZscore(d_dist, M, SD, "trainning")
+
+
+#######################
+# for the external set
+
+add_coord = predict(res.pca, newdata = ddesc2)
+d_dist_test = computeDistFromCenter(coord_centroid, add_coord, "test")
+d_zscore_test = computeZscore(d_dist_test, M, SD, "test")
+
+# define a in/out AD => threshold at 1
+l_AD = d_zscore_test$Zscore
+l_AD[which(d_zscore_test$Zscore<=2)] = 1
+l_AD[which(d_zscore_test$Zscore >= 3)] = 0
+l_AD[which(d_zscore_test$Zscore > 2 & d_zscore_test$Zscore < 3)] = 0.5
+
+d_zscore_test = d_zscore_test[,-1]
+d_zscore_test = cbind(d_zscore_test, l_AD)
+d_zscore_test = d_zscore_test[,-1]
+colnames(d_zscore_test)[dim(d_zscore_test)[2]] = "AD"
+
+write.csv(d_zscore_test, file=paste(pr_out, "AD_zscore.csv", sep=""))
+
+
+# plot ACP
+data_plot = res.pca$x
+data_plot = rbind(data_plot, add_coord[,seq(1, nb_CP)])
+
+vcolor = rep("#005b96",dim(res.pca$x)[1])
+vcolor = c(vcolor, rep("#45ca66",dim(add_coord)[1]))
+
+# PCA color  
+png (paste (pr_out, "PCA_train_test.png", sep = ""), 1700, 1500)
+factor = factorACP (data_plot, PCAcoord[[3]])
+par(mar=c(8,8,8,8))
+plot(data_plot[,1],data_plot[,2], pch=20, col = vcolor, xlab = paste("PC1: ", round (var_cap[1], 2), "%", sep = ""), ylab = paste("PC2: ", round(var_cap[2], 2), "%", sep = ""), cex.lab = 4, cex.main = 4, cex.axis = 1.75, cex = 4)
+points(data_plot[which(vcolor != "gray90"),1], data_plot[which(vcolor != "gray90"),2], pch=20, col = vcolor[which(vcolor != "gray90")], cex = 4)
+abline(h=0,v=0)
+warnings ()
+dev.off()

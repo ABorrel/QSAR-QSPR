@@ -15,7 +15,7 @@ drawROCCurve = function(vreal, vpred, pout){
     vpredROC[which(vpred >= i)] = 1
     
     vperf = classPerf(vreal, vpredROC)
-    dROC = rbind(dROC, c(i, vperf[[2]], 1 - vperf[[3]]))
+    dROC = rbind(dROC, c(i, vperf[[2]], vperf[[3]]))
   }
   colnames(dROC) = c("Sep", "Sensitivity", "Specificity")
   dROC = as.data.frame(dROC)
@@ -24,6 +24,8 @@ drawROCCurve = function(vreal, vpred, pout){
          aes(x = 1-Specificity, y = Sensitivity )) +
     geom_point()
   ggsave(paste(pout, ".png", sep = ""), width = 10, height = 10, dpi = 300)  
+  
+  return(dROC)
 }
 
 
