@@ -20,10 +20,10 @@ pr_out = args[4]
 #pr_out = "C:/Users/Aborrel/research/ILS/HERG/results/QSAR/1/"
 
 
-p_desc = 'C:\\Users\\Aborrel\\research\\ILS\\HERG\\results\\QSAR\\trainGlobal.csv'
-p_aff = 'C:\\Users\\Aborrel\\research\\ILS\\HERG\\results\\Cleaned_Data\\AC50_cleaned.csv'
-rate_act = 0.3
-pr_out = 'C:\\Users\\Aborrel\\research\\ILS\\HERG\\results\\QSAR\\1\\/'
+#p_desc = 'C:\\Users\\Aborrel\\research\\ILS\\HERG\\results\\QSAR\\trainGlobal.csv'
+#p_aff = 'C:\\Users\\Aborrel\\research\\ILS\\HERG\\results\\Cleaned_Data\\AC50_cleaned.csv'
+#rate_act = 0.3
+#pr_out = 'C:\\Users\\Aborrel\\research\\ILS\\HERG\\results\\QSAR\\1\\/'
 
 
 
