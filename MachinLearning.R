@@ -3,8 +3,8 @@
 source("performance.R")
 library("pls")
 source("./../R_toolbox/dataManager.R")
-library (randomForest)
-library (MASS)
+library(randomForest)
+library(MASS)
 library(rpart)
 library(rpart.plot)
 library(e1071)
@@ -494,7 +494,7 @@ PLSTrainTest = function(dtrain, dtest, dcluster, nbcp, prout){
 # case of regression #
 ######################
 
-SVMRegCV = function(lfolds, vgamma, vcost, dcluster, prout){
+SVMRegCV = function(lfolds, vgamma, vcost, dcluster, kernel_svm, prout){
   
   pmodel = paste(prout, "modelCV.RData", sep = "")
   if(file.exists(pmodel) == TRUE){
@@ -522,7 +522,7 @@ SVMRegCV = function(lfolds, vgamma, vcost, dcluster, prout){
       }
     }
     
-    modtune = SVMTune(dtrain, vgamma, vcost, 10)
+    modtune = SVMTune(dtrain, vgamma, vcost, kernel_svm, 10)
     
     #print(dtest)
     y_real = append(y_real, dtest[,"Aff"])
@@ -579,7 +579,7 @@ SVMRegCV = function(lfolds, vgamma, vcost, dcluster, prout){
   return(outmodelCV)
 }
 
-SVMRegTrainTest = function(dtrain, dtest, vgamma, vcost, dcluster, prout){
+SVMRegTrainTest = function(dtrain, dtest, vgamma, vcost, dcluster, kernel_svm, prout){
   
   pmodel = paste(prout, "model.RData", sep = "")
   if(file.exists(pmodel)){
@@ -591,7 +591,7 @@ SVMRegTrainTest = function(dtrain, dtest, vgamma, vcost, dcluster, prout){
   print(paste("==== SVM in train-test --- Automatic optimization CV-10====", sep = ""))
   
   # optimisation on CV-10
-  modelsvm = SVMTune(dtrain, vgamma, vcost, 10)
+  modelsvm = SVMTune(dtrain, vgamma, vcost, kernel_svm, 10)
   
   predsvmtest = predict(modelsvm, dtest[,-c(which(colnames(dtest) == "Aff"))])
   predsvmtrain = predict(modelsvm, dtrain[,-c(which(colnames(dtrain) == "Aff"))])
@@ -680,7 +680,7 @@ SVMRegTrainTest = function(dtrain, dtest, vgamma, vcost, dcluster, prout){
   return(outmodel)
 }
 
-SVMTune = function(dtrain, vgamma, vcost, nbCV){
+SVMTune = function(dtrain, vgamma, vcost, kernel_svm, nbCV){
   
   
   lfolds = samplingDataNgroup(dtrain, nbCV)
@@ -712,7 +712,7 @@ SVMTune = function(dtrain, vgamma, vcost, nbCV){
     ddesctest = dtest[,-c(which(colnames(dtest) == "Aff"))]
     #ddesctest = scale(ddesctest, center = attr(ddestrain, 'scaled:center'), scale = attr(ddestrain, 'scaled:scale'))
     
-    modelsvm = tune(svm, train.x = ddestrain, train.y = Aff, ranges = list(gamma = vgamma, cost = vcost), tunecontrol = tune.control(sampling = "cross"), kernel = "polynomial")
+    modelsvm = tune(svm, train.x = ddestrain, train.y = Aff, ranges = list(gamma = vgamma, cost = vcost), tunecontrol = tune.control(sampling = "cross"), kernel = kernel_svm)
     modelsvm = modelsvm$best.model
     
     vpred = predict(modelsvm, ddesctest)

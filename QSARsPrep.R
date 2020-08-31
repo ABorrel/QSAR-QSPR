@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 source("./../R_toolbox/dataManager.R")
-
+#source("../../../../ILS/development/R_toolbox/dataManager.R")
 
 ################
 #     MAIN     #
@@ -17,7 +17,15 @@ logaff = as.integer(args[7])
 typeAff = args[8]
 nbNA = as.integer(args[9])
 
-
+#pdesc = "/home/aborrel/research/ILS/HERG/results/QSARreg/desc_global.csv"
+#pdata = "/home/aborrel/research/ILS/HERG/data/AC50_7403.txt"
+#prout = "//home/aborrel/research/ILS/HERG/results/QSARreg/1/"
+#valcor = "0.9"
+#maxquantile = 90 
+#proptraintest =0.15
+#logaff =0 
+#typeAff = "All" 
+#nbNA = 10
 
 #pdesc = "/home/borrela2/interference/PUBCHEM/411/descMat"
 #pdata = "/home/borrela2/interference/PUBCHEM/411/QSAR/Aff/actClass.txt"

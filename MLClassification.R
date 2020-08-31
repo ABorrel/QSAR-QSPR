@@ -756,7 +756,8 @@ CARTClassCV = function(lfolds, prout){
       }
     }
     
-    modelCART = rpart( Aff~., data = dtrain, method = "class")
+    dtrain$Aff = as.factor(as.character(dtrain$Aff))
+    modelCART = best.rpart( Aff~., data = dtrain, minsplit = c(1,5,1))
     vpred = predict(modelCART, dtest)
     vpred = vpred[,2]
     vproba = vpred
@@ -825,11 +826,13 @@ CARTclass = function (dtrain, dtest, prout){
   print("== CART in train/test ==")
   
   # model and apply
-  modelCART = rpart( Aff~., data = dtrain, method = "class")
+  dtrain$Aff = as.factor(as.character(dtrain$Aff))
+  
+  modelCART = best.rpart( Aff~., data = dtrain, minsplit = c(1,5,1))
+  
+  
   vpredtrain = predict(modelCART, dtrain)
   vpredtest = predict(modelCART, dtest)
-  
-  #print(vpredtest)
   
   # draw tree
   pdf(paste(prout, "TreeCARTClass-TrainTest.pdf",sep = ""))
@@ -842,10 +845,10 @@ CARTclass = function (dtrain, dtest, prout){
   
   
   #result
-  vpredtrain = vpredtrain[,1]
+  vpredtrain = vpredtrain[,2]
   vprobatrain = vpredtrain
   
-  vpredtest = vpredtest[,1]
+  vpredtest = vpredtest[,2]
   vprobatest = vpredtest
   
   vrealtrain = dtrain[,c("Aff")]

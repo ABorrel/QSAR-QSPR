@@ -180,12 +180,41 @@ if (modelPLSreg == 1){
 ###########
 
 if(modelSVMreg == 1){
-  proutSVM = paste(prout, "SVMreg/", sep = "")
-  dir.create(proutSVM)
+  # linear
+  proutSVM_linear = paste(prout, "SVMreg_linear/", sep = "")
+  dir.create(proutSVM_linear)
   vgamma = 2^(-1:1)
   vcost = 2^(2:8)
-  outSVMCV = SVMRegCV(lgroupCV, vgamma, vcost, dcluster, proutSVM)
-  outSVM = SVMRegTrainTest(dtrain, dtest, vgamma, vcost, dcluster, proutSVM)
+  outSVMCV_linear = SVMRegCV(lgroupCV, vgamma, vcost, dcluster, "linear" , proutSVM_linear)
+  outSVM_linear = SVMRegTrainTest(dtrain, dtest, vgamma, vcost, dcluster, "linear" ,proutSVM_linear)
+  
+  # radial
+  proutSVM_radial = paste(prout, "SVMreg_radial/", sep = "")
+  dir.create(proutSVM_radial)
+  vgamma = 2^(-1:1)
+  vcost = 2^(2:8)
+  outSVMCV_radial = SVMRegCV(lgroupCV, vgamma, vcost, dcluster, "radial basis", proutSVM_radial)
+  outSVM_radial = SVMRegTrainTest(dtrain, dtest, vgamma, vcost, dcluster, "radial basis", proutSVM_radial)
+  
+  
+  #sigmoid
+  proutSVM_sigmoid = paste(prout, "SVMreg_sigmoid/", sep = "")
+  dir.create(proutSVM_sigmoid)
+  vgamma = 2^(-1:1)
+  vcost = 2^(2:8)
+  outSVMCV_sigmoid = SVMRegCV(lgroupCV, vgamma, vcost, dcluster, "sigmoid" ,proutSVM_sigmoid)
+  outSVM_sigmoid = SVMRegTrainTest(dtrain, dtest, vgamma, vcost, dcluster, "sigmoid" ,proutSVM_sigmoid)
+  
+  
+  #polynomial
+  proutSVM_polynomial = paste(prout, "SVMreg_polynomial/", sep = "")
+  dir.create(proutSVM_polynomial)
+  vgamma = 2^(-1:1)
+  vcost = 2^(2:8)
+  outSVMCV_polynomial = SVMRegCV(lgroupCV, vgamma, vcost, dcluster, "polynomial", proutSVM_polynomial)
+  outSVM_polynomial = SVMRegTrainTest(dtrain, dtest, vgamma, vcost, dcluster, "polynomial", proutSVM_polynomial)
+  
+  
 }
 
 ######
@@ -249,7 +278,6 @@ if(modelNNreg ==1){
   vsize = c(1,2,5,10)
   vdecay = c(1e-6, 1e-4)
   
-  print("AAAAA")
   
   outNNCV = NNRegCV(lgroupCV, dcluster, vdecay, vsize, proutNN)
   outNN = NNReg(dtrain, dtest, dcluster,vdecay, vsize, proutNN)
@@ -292,10 +320,25 @@ if(modelPLSreg==1){
 }
 
 if(modelSVMreg==1){
-  perfCV = rbind(perfCV, outSVMCV$CV)
-  perftrain = rbind(perftrain, outSVM$train)
-  perfTest = rbind(perfTest, outSVM$test)
-  rownameTable = append(rownameTable, "SVM")
+  perfCV = rbind(perfCV, outSVMCV_linear$CV)
+  perftrain = rbind(perftrain, outSVM_linear$train)
+  perfTest = rbind(perfTest, outSVM_linear$test)
+  rownameTable = append(rownameTable, "SVM_linear")
+  
+  perfCV = rbind(perfCV, outSVMCV_radial$CV)
+  perftrain = rbind(perftrain, outSVM_radial$train)
+  perfTest = rbind(perfTest, outSVM_radial$test)
+  rownameTable = append(rownameTable, "SVM_radial")
+  
+  perfCV = rbind(perfCV, outSVMCV_sigmoid$CV)
+  perftrain = rbind(perftrain, outSVM_sigmoid$train)
+  perfTest = rbind(perfTest, outSVM_sigmoid$test)
+  rownameTable = append(rownameTable, "SVM_sigmoid")
+  
+  perfCV = rbind(perfCV, outSVMCV_polynomial$CV)
+  perftrain = rbind(perftrain, outSVM_polynomial$train)
+  perfTest = rbind(perfTest, outSVM_polynomial$test)
+  rownameTable = append(rownameTable, "SVM_polynomial")
 }
 
 if(modelRFreg==1){
