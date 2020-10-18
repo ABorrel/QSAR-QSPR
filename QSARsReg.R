@@ -33,7 +33,7 @@ internalCV = as.integer(args[6])
 ####################
 modelPCRreg = 1 
 modelPLSreg = 1
-modelSVMreg = 1
+modelSVMreg = 0
 modelRFreg = 1
 modelCartreg = 1
 modelNNreg = 1
