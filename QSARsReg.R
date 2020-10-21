@@ -1,9 +1,9 @@
 #!/usr/bin/env Rscript
-source("./../R_toolbox/dataManager.R")
-source("MachinLearning.R")
+library("Toolbox")
+source("MLRegression.R")
 source("performance.R")
 
-library(chemmodlab)
+#library(chemmodlab)
 library (rpart)
 
 
@@ -21,22 +21,22 @@ internalCV = as.integer(args[6])
 
 
 # to test
-#ptrain = "/home/borrela2/imatinib/results/analysis/QSARs/Lig2D/trainSet.csv"
-#ptest = "/home/borrela2/imatinib/results/analysis/QSARs/Lig2D/testSet.csv"
-#pcluster = "0"
-#prout = "/home/borrela2/imatinib/results/analysis/QSARs/Lig2D/"
+ptrain = "c:/Users/aborr/research/ILS/HERG/results/QSARreg/1/trainSet.csv"
+ptest = "c:/Users/aborr/research/ILS/HERG/results/QSARreg/1/testSet.csv"
+pcluster = "0"
+prout = "c:/Users/aborr/research/ILS/HERG/results/QSARreg/1/"
 # cross validation 10
-#nbCV = 10
-
+nbCV = 10
+internalCV = 1
 
 # model regression #
 ####################
-modelPCRreg = 1 
-modelPLSreg = 1
-modelSVMreg = 0
-modelRFreg = 1
-modelCartreg = 1
-modelNNreg = 1
+modelPCRreg = 0 
+modelPLSreg = 0
+modelSVMreg = 1
+modelRFreg = 0
+modelCartreg = 0
+modelNNreg = 0
 modelDLreg = 0 #old creation of DNN using R
 chemmodlabreg = 0
 
@@ -183,16 +183,16 @@ if(modelSVMreg == 1){
   # linear
   proutSVM_linear = paste(prout, "SVMreg_linear/", sep = "")
   dir.create(proutSVM_linear)
-  vgamma = 2^(-1:1)
-  vcost = 2^(2:8)
+  vgamma = 2^(-2:2)
+  vcost = 10^(2:2)
   outSVMCV_linear = SVMRegCV(lgroupCV, vgamma, vcost, dcluster, "linear" , proutSVM_linear)
   outSVM_linear = SVMRegTrainTest(dtrain, dtest, vgamma, vcost, dcluster, "linear" ,proutSVM_linear)
   
   # radial
   proutSVM_radial = paste(prout, "SVMreg_radial/", sep = "")
   dir.create(proutSVM_radial)
-  vgamma = 2^(-1:1)
-  vcost = 2^(2:8)
+  vgamma = 2^(-2:2)
+  vcost = 10^(2:2)
   outSVMCV_radial = SVMRegCV(lgroupCV, vgamma, vcost, dcluster, "radial basis", proutSVM_radial)
   outSVM_radial = SVMRegTrainTest(dtrain, dtest, vgamma, vcost, dcluster, "radial basis", proutSVM_radial)
   
@@ -200,8 +200,8 @@ if(modelSVMreg == 1){
   #sigmoid
   proutSVM_sigmoid = paste(prout, "SVMreg_sigmoid/", sep = "")
   dir.create(proutSVM_sigmoid)
-  vgamma = 2^(-1:1)
-  vcost = 2^(2:8)
+  vgamma = 2^(-2:2)
+  vcost = 10^(2:2)
   outSVMCV_sigmoid = SVMRegCV(lgroupCV, vgamma, vcost, dcluster, "sigmoid" ,proutSVM_sigmoid)
   outSVM_sigmoid = SVMRegTrainTest(dtrain, dtest, vgamma, vcost, dcluster, "sigmoid" ,proutSVM_sigmoid)
   
@@ -209,8 +209,8 @@ if(modelSVMreg == 1){
   #polynomial
   proutSVM_polynomial = paste(prout, "SVMreg_polynomial/", sep = "")
   dir.create(proutSVM_polynomial)
-  vgamma = 2^(-1:1)
-  vcost = 2^(2:8)
+  vgamma = 2^(-2:2)
+  vcost = 10^(2:2)
   outSVMCV_polynomial = SVMRegCV(lgroupCV, vgamma, vcost, dcluster, "polynomial", proutSVM_polynomial)
   outSVM_polynomial = SVMRegTrainTest(dtrain, dtest, vgamma, vcost, dcluster, "polynomial", proutSVM_polynomial)
   
