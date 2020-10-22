@@ -31,12 +31,12 @@ internalCV = 1
 
 # model regression #
 ####################
-modelPCRreg = 0 
-modelPLSreg = 0
+modelPCRreg = 1 
+modelPLSreg = 1
 modelSVMreg = 1
-modelRFreg = 0
-modelCartreg = 0
-modelNNreg = 0
+modelRFreg = 1
+modelCartreg = 1
+modelNNreg = 1
 modelDLreg = 0 #old creation of DNN using R
 chemmodlabreg = 0
 
@@ -193,8 +193,8 @@ if(modelSVMreg == 1){
   dir.create(proutSVM_radial)
   vgamma = 2^(-2:2)
   vcost = 10^(2:2)
-  outSVMCV_radial = SVMRegCV(lgroupCV, vgamma, vcost, dcluster, "radial basis", proutSVM_radial)
-  outSVM_radial = SVMRegTrainTest(dtrain, dtest, vgamma, vcost, dcluster, "radial basis", proutSVM_radial)
+  outSVMCV_radial = SVMRegCV(lgroupCV, vgamma, vcost, dcluster, "radial", proutSVM_radial)
+  outSVM_radial = SVMRegTrainTest(dtrain, dtest, vgamma, vcost, dcluster, "radial", proutSVM_radial)
   
   
   #sigmoid
@@ -225,13 +225,14 @@ if (modelRFreg == 1){
   proutRF = paste(prout, "RFreg/", sep = "")
   dir.create(proutRF)
   
-  vntree = c(10,50,100,200,500, 1000)
-  vmtry = c(1,2,3,4,5,10,15,20, 25, 30)
+  #vntree = c(10,50,100,200,500, 1000)
+  #vmtry = c(1,2,3,4,5,10,15,20, 25, 30)
+  #parameters = RFGridRegCV(vntree, vmtry, lgroupCV,  proutRF)
+  #outRFCV = RFregCV(lgroupCV, parameters[[1]], parameters[[2]], dcluster, proutRF)
+  #outRF = RFreg(dtrain, dtest, parameters[[1]], parameters[[2]], dcluster, proutRF)
   
-  #RFregCV(lgroupCV, 50, 5, dcluster, prout)# for test
-  parameters = RFGridRegCV(vntree, vmtry, lgroupCV,  proutRF)
-  outRFCV = RFregCV(lgroupCV, parameters[[1]], parameters[[2]], dcluster, proutRF)
-  outRF = RFreg(dtrain, dtest, parameters[[1]], parameters[[2]], dcluster, proutRF)
+  outRFCV = RFregCV_tuneRF(lgroupCV, dcluster, 1000,  proutRF)
+  outRF = RFreg_tuneRF(dtrain, dtest, dcluster, 1000, proutRF)
 }
 
 
@@ -271,16 +272,14 @@ if(chemmodlabreg == 1){
 
 
 if(modelNNreg ==1){
-  vsize = c(1,2,5,10)
-  vdecay = c(1e-6, 1e-4, 1e-2, 1e-1, 1)
   proutNN = paste(prout, "NNreg/", sep = "")
   dir.create(proutNN)
-  vsize = c(1,2,5,10)
-  vdecay = c(1e-6, 1e-4)
-  
+  vsize = c(1:15)
+  vdecay = c(0.01, 0.01, .1, 1)
   
   outNNCV = NNRegCV(lgroupCV, dcluster, vdecay, vsize, proutNN)
   outNN = NNReg(dtrain, dtest, dcluster,vdecay, vsize, proutNN)
+  
 }
 
 

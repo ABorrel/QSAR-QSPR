@@ -11,6 +11,7 @@ library(e1071)
 library(ggplot2)
 #library(neuralnet)
 library(nnet)
+library(caret)
 library(clusterGeneration)
 library(stringr)
 library(reshape2)
@@ -168,11 +169,11 @@ PCRCV = function(lfolds, nbcomp, dcluster, prout){
   
   #write.table(tperf, paste(prout, "perfPCRRegCV_", length(lfolds), ".txt", sep = ""), sep = "\t")
   print("Perfomances in CV")
-  print(paste("R2=", R2cp, sep = ""))
-  print(paste("R02=", R02cp, sep = ""))
-  print(paste("MAE=", MAEcp, sep = ""))
-  print(paste("Cor=", corpred, sep = ""))
-  print(paste("RMSEP=", rmsepcp, sep = ""))
+  print(paste("R2 = ", R2cp, sep = ""))
+  print(paste("R02 = ", R02cp, sep = ""))
+  print(paste("MAE = ", MAEcp, sep = ""))
+  print(paste("Cor = ", corpred, sep = ""))
+  print(paste("RMSEP = ", rmsepcp, sep = ""))
   print("")
   print("")
   
@@ -503,7 +504,7 @@ SVMRegCV = function(lfolds, vgamma, vcost, dcluster, kernel_svm, prout){
   }
   
   
-  print(paste("==== SVM in CV with ", length(lfolds), " Automatic optimization CV ====", sep = ""))
+  print(paste("==== SVM-", kernel_svm, " in CV with ", length(lfolds), " Automatic optimization CV ====", sep = ""))
   
   # data combination
   k = 1
@@ -588,7 +589,7 @@ SVMRegTrainTest = function(dtrain, dtest, vgamma, vcost, dcluster, kernel_svm, p
   }
   
   
-  print(paste("==== SVM in train-test --- Automatic optimization CV-10====", sep = ""))
+  print(paste("==== SVM in train-test ", kernel_svm,"--- Automatic optimization CV-10====", sep = ""))
   
   # optimisation on CV-10
   modelsvm = SVMTune2(dtrain, vgamma, vcost, kernel_svm, 10)
@@ -617,11 +618,11 @@ SVMRegTrainTest = function(dtrain, dtest, vgamma, vcost, dcluster, kernel_svm, p
   print("===== SVM model train-Test =====")
   #print(modelpls$coefficients)
   print(paste("Perf training (dim= ", dim(dtrain)[1], "*", dim(dtrain)[2], "):", sep = ""))
-  print(paste("R2 train=", r2train))
-  print(paste("R02 train=", R02train))
-  print(paste("MAE train=", MAEtrain))
-  print(paste("Corval train=", cortrain))
-  print(paste("RMSEP=", rmseptrain))
+  print(paste("R2 train=", r2train), sep = "")
+  print(paste("R02 train=", R02train), sep = "")
+  print(paste("MAE train=", MAEtrain), sep = "")
+  print(paste("Corval train=", cortrain), sep = "")
+  print(paste("RMSEP=", rmseptrain), sep = "")
   print("")
   print("")
   
@@ -769,24 +770,24 @@ NNRegCV = function(lfolds, dcluster, vdecay, vsize, prout){
     }
     
     # grid optimisation 
-    modelNN = NNRegOptimizeGrid(dtrain, "0", vdecay, vsize, 10, prout)
+    modelNN = NNRegOptimizeGrid2(dtrain, vdecay, vsize, 10, paste(prout, k, sep=""))
     
     #dtrain = as.data.frame(scale(dtrain))
-    ddestrain = dtrain[,-c(which(colnames(dtrain) == "Aff"))]
-    Aff = dtrain[,c("Aff")]
+    #ddestrain = dtrain[,-c(which(colnames(dtrain) == "Aff"))]
+    #Aff = dtrain[,c("Aff")]
     
     #print (as.vector(Aff))
-    ddestrain = scale(ddestrain)
+    #ddestrain = scale(ddestrain)
 
     #dtest = as.data.frame(scale(dtest))
-    dtestAff = dtest[,"Aff"]
-    ddesctest = dtest[,-c(which(colnames(dtest) == "Aff"))]
-    ddesctest = scale(ddesctest, center = attr(ddestrain, 'scaled:center'), scale = attr(ddestrain, 'scaled:scale'))
+    #dtestAff = dtest[,"Aff"]
+    #ddesctest = dtest[,-c(which(colnames(dtest) == "Aff"))]
+    #ddesctest = scale(ddesctest, center = attr(ddestrain, 'scaled:center'), scale = attr(ddestrain, 'scaled:scale'))
     
-    vpred = predict(modelNN, ddesctest)
+    vpred = predict(modelNN, dtest)
     names(vpred) = rownames(dtest)
     y_predict = append(y_predict, vpred)
-    y_real = append(y_real, dtestAff)
+    y_real = append(y_real, dtest$Aff)
     k = k + 1 
   }
   
@@ -843,23 +844,23 @@ NNReg = function(dtrain, dtest, dcluster,  vdecay, vsize, prout){
   print(paste("==== Neural network in train-test ===", sep = ""))
   
   # find best model
-  modelNN = NNRegOptimizeGrid(dtrain, "0", vdecay, vsize, 10, prout)
+  modelNN = NNRegOptimizeGrid2(dtrain, vdecay, vsize, 10, prout)
   
   # scale data
-  dtrain = as.data.frame(dtrain)
-  ddestrain = dtrain[,-c(which(colnames(dtrain) == "Aff"))]
-  dAfftrain = dtrain[,c("Aff")]
-  ddestrain = scale(ddestrain)
+  #dtrain = as.data.frame(dtrain)
+  #ddestrain = dtrain[,-c(which(colnames(dtrain) == "Aff"))]
+  #dAfftrain = dtrain[,c("Aff")]
+  #ddestrain = scale(ddestrain)
   
-  dtest = as.data.frame(dtest)
-  ddestest = dtest[,-c(which(colnames(dtest) == "Aff"))]
-  dAfftest = dtest[,c("Aff")]
-  ddestest = scale(ddestest, attr(ddestrain, 'scaled:center'), scale = attr(ddestrain, 'scaled:scale'))
+  #dtest = as.data.frame(dtest)
+  #ddestest = dtest[,-c(which(colnames(dtest) == "Aff"))]
+  #dAfftest = dtest[,c("Aff")]
+  #ddestest = scale(ddestest, attr(ddestrain, 'scaled:center'), scale = attr(ddestrain, 'scaled:scale'))
   
   # predict  #
   ############
-  predNNtest = predict(modelNN, ddestest)
-  predNNtrain = predict(modelNN, ddestrain)
+  predNNtest = predict(modelNN, dtest)
+  predNNtrain = predict(modelNN, dtrain)
   
   names(predNNtrain) = rownames(dtrain)
   names(predNNtest) = rownames(dtest)
@@ -1043,6 +1044,39 @@ NNRegOptimizeGrid = function(dtrain, pfig, vdecay, vsize, nbCV, prout){
   return(lmodel[[which(lR2best == max(lR2best))]])
 }
 
+NNRegOptimizeGrid2 = function(dtrain, vdecay, vsize, nbCV, prout){
+  
+  Aff = dtrain[,c("Aff")]
+  dtune = dtrain[,-c(which(colnames(dtrain) == "Aff"))]
+  
+  nnetGrid <- expand.grid(decay = vdecay, size=vsize)
+  maxSize <- max(nnetGrid$size)
+  numWts <- 1*(maxSize * (length(Aff) + 1) + maxSize + 1)
+  # set a random seed to ensure repeatability
+  set.seed(2017)
+  
+  ctrl <- trainControl(method = "cv", number = 10)
+  
+  nnetTune <- train(dtune, Aff,
+                    method = "nnet", # train neural network using `nnet` package 
+                    tuneGrid = nnetGrid, # tuning grid
+                    trControl = ctrl, # process customization set before
+                    MaxNWts = numWts,  # maximum number of weight
+                    maxit = 500,
+                    metric = "Rsquared"# maximum iteration
+  )
+ 
+  best_size = nnetTune$bestTune$size
+  best_decay = nnetTune$bestTune$decay
+  
+  ggplot(nnetTune) + theme_bw()
+  ggsave(paste(prout, "_Optz.png", sep = ""))
+  
+  modelNN = nnet(dtune, Aff, size=best_size, linout = T,  maxit = 500, MaxNWts=numWts, decay = best_decay)
+  
+  return(modelNN) 
+  
+}
 
 #################
 # DEEP LEARNING #
@@ -1618,6 +1652,429 @@ RFreg = function (dtrain, dtest, ntree, mtry, dcluster, prout){
   colnames(trainw) = c("Yreal", "Ypredict")
   write.csv(trainw, paste(prout, "perfTrainRFRegPred.csv"))  
     
+  r2train = calR2(dtrain[,"Aff"], vpredtrain)
+  cortrain = cor(dtrain[,"Aff"], vpredtrain)
+  RMSEPtrain = vrmsep(dtrain[,"Aff"], vpredtrain)
+  R02train = R02(dtrain[,"Aff"], vpredtrain)
+  MAEtrain = MAE(dtrain[,"Aff"], vpredtrain)
+  
+  r2test = calR2(dtest[,"Aff"], vpredtest)
+  cortest = cor(dtest[,"Aff"], vpredtest)
+  RMSEPtest = vrmsep(dtest[,"Aff"], vpredtest)
+  R02test = R02(dtest[,"Aff"], vpredtest)
+  MAEtest = MAE(dtest[,"Aff"], vpredtest)
+  
+  
+  print("===Perf RF===")
+  print(paste("Dim train: ", dim(dtrain)[1]," ", dim(dtrain)[2], sep = ""))
+  print(paste("Dim test: ", dim(dtest)[1]," ", dim(dtest)[2], sep = ""))
+  
+  print("==Train==")
+  print(paste("R2 train=", r2train, sep = ""))
+  print(paste("R02 train=", R02train, sep = ""))
+  print(paste("MAE train=", MAEtrain, sep = ""))
+  print(paste("cor train=", cortrain, sep = ""))
+  print(paste("RMSEP train=", RMSEPtrain, sep = ""))
+  
+  
+  print("==Test==")
+  print(paste("R2 test=", r2test, sep = ""))
+  print(paste("R02 test=", R02test, sep = ""))
+  print(paste("MAE test=", MAEtest, sep = ""))
+  print(paste("cor test=", cortest, sep = ""))
+  print(paste("RMSEP test=", RMSEPtest, sep = ""))
+  print("")
+  print("")
+  
+  
+  outmodel = list()
+  ltrain = c(r2train, R02train, MAEtrain, cortrain, RMSEPtrain)
+  names(ltrain) = c("R2", "R02", "MAE", "r", "RMSEP")
+  outmodel$train = ltrain
+  
+  ltest = c(r2test, R02test, MAEtest, cortest, RMSEPtest)
+  names(ltest) = c("R2", "R02", "MAE", "r", "RMSEP")
+  outmodel$test = ltest
+  
+  outmodel$model = modelRF
+  
+  save(outmodel, file = paste(prout, "model.RData", sep = ""))
+  
+  pdf(paste(prout, "PerfRFreg_TrainTest.pdf", sep = ""), 20, 20)
+  plot(modelRF)
+  
+  # train
+  plot(dtrain[,"Aff"], vpredtrain, pch = 20, main = paste("Correlation = ", round(cor(dtrain[,"Aff"], vpredtrain), digits = 3)), cex = 2)
+  abline(a = 0, b = 1, col = "red", cex = 3)
+  plot(dtrain[,"Aff"], vpredtrain, type = "n", main = paste("Correlation = ", round(cor(dtrain[,"Aff"], vpredtrain), digits = 3)))
+  text(dtrain[,"Aff"], vpredtrain, labels = names(vpredtrain))
+  abline(a = 0, b = 1, col = "red", cex = 3)
+  
+  # cluster - train
+  dclusterTrain = dcluster[names(vpredtrain)]
+  text(dtrain[,"Aff"], vpredtrain, labels = dclusterTrain, col = dclusterTrain)
+  abline(a = 0, b = 1, col = "red", cex = 3)
+  
+  
+  # test
+  plot(dtest[,"Aff"], vpredtest, pch = 20, main = paste("Correlation = ", round(cor(dtest[,"Aff"], vpredtest), digits = 3)), cex = 2)
+  abline(a = 0, b = 1, col = "red", cex = 3)
+  plot(dtest[,"Aff"], vpredtest, type = "n", main = paste("Correlation = ", round(cor(dtest[,"Aff"], vpredtest), digits = 3)))
+  text(dtest[,"Aff"], vpredtest, labels = names(vpredtest))
+  abline(a = 0, b = 1, col = "red", cex = 3)
+  
+  # cluster-test
+  dclusterTest = dcluster[names(vpredtest)]
+  text(dtest[,"Aff"], vpredtest, labels = dclusterTest, col = dclusterTest)
+  abline(a = 0, b = 1, col = "red", cex = 3)
+  
+  dev.off() 
+  
+  
+  # test - plot for publication
+  dpred = cbind(dtest[,"Aff"], vpredtest)
+  colnames(dpred) = c("Yreal", "Ypredict")
+  dpred = as.data.frame(dpred)
+  
+  p = ggplot(dpred, aes(Yreal, Ypredict))+
+    geom_point(size=1.5, colour="black", shape=21) + 
+    geom_text(x=5, y=11.5, label = paste("R2=",round(r2test,2), sep = ""), size = 8)+
+    labs(x = "Experimental pIC50", y = "Predicted pIC50")  +
+    ylim (c(4, 7.5)) +
+    theme(axis.text.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.text.x = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.x =  element_text(size = 25, hjust = 0.5, vjust =0.1))+
+    geom_segment(aes(x = 4, y = 4, xend = 12, yend = 12), linetype=2, size = 0.1) + 
+    ylim (c(4, 7.5)) 
+  #print(p)
+  ggsave(paste(prout, "PerfRFregpoint_Test.png", sep = ""), width = 6,height = 6, dpi = 300)
+  
+  
+  #dpred = cbind(dtest[,"Aff"], vpredtest)
+  Vcluster = dclusterTest
+  #dpred = cbind(dpred, as.character(dclusterTest))
+  dpred = cbind(dpred, Vcluster)
+  #colnames(dpred) = c("NAME", "Yreal", "Ypredict", "cluster")
+  #dpred = as.data.frame(dpred)
+  #print(dpred)
+  
+  p = ggplot(dpred, aes(Yreal, Ypredict, label=rownames(dpred)))+
+    geom_point(size=1.5, colour="black", shape=21) + 
+    geom_text(x=5, y=11.5, label = paste("R2=",round(r2test,2), sep = ""), size = 8)+
+    labs(x = "pAff", y = "Predicted pAff") +
+    geom_text(size = 2.6, aes(label= paste(rownames(dpred), "^(", Vcluster, ")", sep = "")), parse = TRUE, color="black", nudge_y = 0.06) + 
+    labs(x = "Experimental pIC50", y = "Predicted pIC50") + 
+    theme(axis.text.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.text.x = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.x =  element_text(size = 25, hjust = 0.5, vjust =0.1))+
+    ylim (c(4, 7.5))  +
+    geom_segment(aes(x = 4, y = 4, xend = 12, yend = 12), linetype=2, size = 0.1) + 
+    ylim (c(4, 7.5))  
+  #print(p)
+  ggsave(paste(prout, "PerfRFregname_Test.png", sep = ""), width = 8,height = 8, dpi = 300)
+  return(outmodel)
+}
+
+
+RFregCV_tuneRF = function(lfolds, dcluster, ntree, prout){
+  
+  pmodel = paste(prout, "modelCV.RData", sep = "")
+  if(file.exists(pmodel) == TRUE){
+    load(pmodel)
+    
+    valr2 = outmodelCV$CV[1]
+    dpred = read.csv(paste(prout, "perfRFRegCV_", length(lfolds), ".txt", sep = ""), header = TRUE, sep = "\t")
+    colnames(dpred) = c("Ypredict", "Yreal")
+    dpred = as.data.frame(dpred)
+    
+    # no label CV 10
+    theme_set(theme_grey())
+    p = ggplot(dpred, aes(Yreal, Ypredict))+
+      geom_point(size=1.5, colour="black", shape=21) + 
+      geom_text(x=4.3, y=7.2, label = paste("R2=",round(valr2,2), sep = ""), size = 8)+
+      labs(x = "Experimental pIC50", y = "Predicted pIC50") +
+      theme(axis.text.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.text.x = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.x =  element_text(size = 25, hjust = 0.5, vjust =0.1))+
+      xlim (c(4, 7.5)) +
+      geom_segment(aes(x = 4, y = 4, xend = 7.5, yend = 7.5), linetype=2, size = 0.5) + 
+      ylim (c(4, 7.5))
+    ggsave(paste(prout, "PerfRFregpoint_CV10.png", sep = ""), width = 7,height = 7, dpi = 300)
+    
+    
+    # with label - CV10
+    p = ggplot(dpred, aes(Yreal, Ypredict, label=rownames(dpred)))+
+      geom_point(size=1.5, colour="black", shape=21) + 
+      geom_text(x=4.3, y=7.2, label = paste("R2=",round(valr2,2), sep = ""), size = 8)+
+      labs(x = "pAff", y = "Predicted pAff") +
+      geom_text(size = 2.6, aes(label= rownames(dpred)), parse = TRUE, color="black", nudge_y = 0.06) + 
+      labs(x = "Experimental pIC50", y = "Predicted pIC50") + 
+      theme(axis.text.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.text.x = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.x =  element_text(size = 25, hjust = 0.5, vjust =0.1))+
+      xlim (c(4, 7.5))  +
+      geom_segment(aes(x = 4, y = 4, xend = 7.5, yend = 7.5), linetype=2, size = 0.5) + 
+      ylim (c(4, 7.5))  
+    #print(p)
+    ggsave(paste(prout, "PerfRFregname_CV10.png", sep = ""), width = 8,height = 8, dpi = 300)
+    
+    
+    
+    # importance
+    dimportance = read.table(paste(prout, "ImportanceDescFRRegCV_", length(lfolds), ".txt", sep = ""))
+    
+    ORDER = order(dimportance[,1], decreasing = T)
+    NAME = rownames(dimportance)
+    
+    dimportance = cbind(dimportance, NAME)
+    dimportance = cbind (dimportance, ORDER)
+    dimportance = dimportance[ORDER[seq(1,10)],]
+    dimportance = as.data.frame(dimportance)
+    
+    theme_set(theme_grey())
+    p = ggplot(dimportance, aes(-ORDER, M, fill = 1)) + 
+      geom_bar(stat = "identity", show.legend = FALSE) + 
+      scale_x_continuous(breaks = -dimportance$ORDER, labels = dimportance$NAME)+
+      theme(axis.text.y = element_text(size = 15, hjust = 0.5, vjust =0.1), axis.text.x = element_text(size = 15, hjust = 0.5, vjust =0.1), axis.title.y = element_text(size = 15, hjust = 0.5, vjust =0.1), axis.title.x =  element_text(size = 15, hjust = 0.5, vjust =0.1))+
+      labs(y = "", x = "") + 
+      coord_flip()
+    
+    ggsave(paste(prout, "ImportanceDescRF_CV10.png", sep = ""), width = 6,height = 6, dpi = 300)
+    
+    
+    return(outmodelCV)
+  }
+  
+  print(paste("==RF in CV with ", length(lfolds), sep = ""))
+  
+  # data combination
+  k = 1
+  kmax = length(lfolds)
+  y_predict = NULL
+  y_real = NULL
+  timportance = NULL
+  while(k <= kmax){
+    dtrain = NULL
+    dtest = NULL
+    for (m in seq(1:kmax)){
+      if (m == k){
+        dtest = lfolds[[m]]
+      }else{
+        dtrain = rbind(dtrain, lfolds[[m]])
+      }
+    }
+    
+    Aff = dtrain$Aff
+    dtrain = dtrain[,-c(which(colnames(dtrain) == "Aff"))]
+    
+    bestmtry <- tuneRF(dtrain, Aff, stepFactor=1.5, improve=1e-5, ntree=ntree)
+    modelRF = randomForest( Aff~., data = dtrain, mtry=bestmtry, ntree=ntree, type = "response",  importance=TRUE)
+    vpred = predict (modelRF, dtest, type = "response")
+    
+    timportance = cbind(timportance, modelRF$importance[,1])
+    
+    names(vpred) = rownames(dtest)
+    y_predict = append(y_predict, vpred)
+    y_real = append(y_real, dtest[,"Aff"])
+    k = k + 1
+  }
+  
+  # performances
+  valr2 = calR2(y_real, y_predict)
+  corval = cor(y_real, y_predict)
+  RMSEP = vrmsep(y_real, y_predict)
+  MAEval = MAE(y_real, y_predict)
+  R02val = R02(y_real, y_predict)
+  
+  print("== Perfomances in CV ==")
+  print(paste("R2=", valr2, sep = ""))
+  print(paste("R02=", R02val, sep = ""))
+  print(paste("MAE=", MAEval, sep = ""))
+  print(paste("Cor=", corval, sep = ""))
+  print(paste("RMSEP=", RMSEP, sep = ""))
+  print("")
+  print("")
+  
+  outmodelCV = list()
+  lscore = c(valr2, R02val, MAEval, corval, RMSEP)
+  names(lscore) = c("R2", "R02", "MAE", "r", "RMSEP")
+  outmodelCV$CV = lscore
+  save(outmodelCV, file = paste(prout, "modelCV.RData", sep = ""))
+  
+  # importance descriptors
+  Mimportance = apply(timportance, 1, mean)
+  SDimportance = apply(timportance, 1, sd)
+  
+  dimportance = cbind(Mimportance, SDimportance)
+  rownames(dimportance) = rownames(timportance)
+  colnames(dimportance) = c("M", "SD")
+  dimportance = dimportance[order(dimportance[,1], decreasing = TRUE),]
+  
+  
+  pdf(paste(prout, "PerfRFreg_CV", length(lfolds), ".pdf", sep = ""), 20, 20)
+  par( mar=c(10,4,4,4))
+  plot(dimportance[,1], xaxt ="n", xlab="", pch = 19, ylab="M importance")
+  axis(1, 1:length(dimportance[,1]), labels = rownames(dimportance), las = 2, cex.axis = 0.7, cex = 2.75)
+  for (i in 1:(dim(dimportance)[1])){
+    segments(i, dimportance[i,1] - dimportance[i,2], i, dimportance[i,1] + dimportance[i,2])
+  }
+  
+  plot(y_real, y_predict, pch = 20, main = paste("Correlation = ", round(cor(y_real, y_predict), digits = 3)), cex = 2)
+  abline(a = 0, b = 1, col = "red", cex = 3)
+  plot(y_real, y_predict, type = "n", main = paste("Correlation = ", round(cor(y_real, y_predict), digits = 3)))
+  text(y_real, y_predict, labels = names(y_predict))
+  abline(a = 0, b = 1, col = "red", cex = 3)
+  
+  # cluster
+  dcluster = dcluster[names(y_predict)]
+  plot(y_real, y_predict, type = "n", main = paste("Correlation = ", round(cor(y_real, y_predict), digits = 3)))
+  text(y_real, y_predict, labels = dcluster, col = dcluster)
+  abline(a = 0, b = 1, col = "red", cex = 3)
+  
+  dev.off()  
+  
+  write.table(dimportance, paste(prout, "ImportanceDescFRRegCV_", length(lfolds), ".txt", sep = ""), sep = "\t")
+  
+  
+  # plot importance descriptors
+  dimportance = read.table(paste(prout, "ImportanceDescFRRegCV_", length(lfolds), ".txt", sep = ""))
+  
+  ORDER = order(dimportance[,1], decreasing = T)
+  NAME = rownames(dimportance)
+  
+  dimportance = cbind(dimportance, NAME)
+  dimportance = cbind (dimportance, ORDER)
+  dimportance = dimportance[ORDER[seq(1,10)],]
+  dimportance = as.data.frame(dimportance)
+  
+  
+  p = ggplot(dimportance, aes(-ORDER, M, fill = 1)) + 
+    geom_bar(stat = "identity", show.legend = FALSE) + 
+    scale_x_continuous(breaks = -dimportance$ORDER, labels = dimportance$NAME)+
+    theme(axis.text.y = element_text(size = 15, hjust = 0.5, vjust =0.1), axis.text.x = element_text(size = 15, hjust = 0.5, vjust =0.1), axis.title.y = element_text(size = 15, hjust = 0.5, vjust =0.1), axis.title.x =  element_text(size = 15, hjust = 0.5, vjust =0.1))+
+    labs(y = "", x = "") + 
+    coord_flip()
+  
+  ggsave(paste(prout, "ImportanceDescRF_CV10.png", sep = ""), width = 6,height = 6, dpi = 300)
+  
+  
+  tperf = cbind(y_predict, y_real)
+  write.table(tperf, paste(prout, "perfRFRegCV_", length(lfolds), ".txt", sep = ""), sep = "\t")
+  
+  # test - plot for publication
+  dpred = cbind(y_real, y_predict)
+  colnames(dpred) = c("Yreal", "Ypredict")
+  dpred = as.data.frame(dpred)
+  
+  p = ggplot(dpred, aes(Yreal, Ypredict))+
+    geom_point(size=1.5, colour="black", shape=21) + 
+    geom_text(x=-2.1, y=2.2, label = paste("R2=",round(valr2,2), sep = ""), size = 8)+
+    labs(x = "Experimental pIC50", y = "Predicted pIC50")  +
+    theme(axis.text.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.text.x = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.x =  element_text(size = 25, hjust = 0.5, vjust =0.1))+
+    xlim (c(4, 7.5)) +
+    geom_segment(aes(x = 4, y = 4, xend = 12, yend = 12), linetype=2, size = 0.1) + 
+    ylim (c(4, 7.5)) 
+  ggsave(paste(prout, "PerfRFregpoint_CV10.png", sep = ""), width = 6,height = 6, dpi = 300)
+  
+  
+  #dpred = cbind(dtest[,"Aff"], vpredtest)
+  Vcluster = dcluster
+  d = cbind(dpred, Vcluster)
+  #colnames(dpred) = c("NAME", "Yreal", "Ypredict", "cluster")
+  #dpred = as.data.frame(dpred)
+  #print(dpred)
+  
+  p = ggplot(dpred, aes(Yreal, Ypredict, label=rownames(dpred)))+
+    geom_point(size=1.5, colour="black", shape=21) + 
+    geom_text(x=-2.1, y=2.2, label = paste("R2=",round(valr2,2), sep = ""), size = 8)+
+    geom_text(size = 2.6, aes(label= paste(rownames(dpred), "^(", Vcluster, ")", sep = "")), parse = TRUE, color="black", nudge_y = 0.06) + 
+    labs(x = "Experimental pIC50", y = "Predicted pIC50")  + 
+    theme(axis.text.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.text.x = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.x =  element_text(size = 25, hjust = 0.5, vjust =0.1))+
+    xlim (c(4, 7.5)) +
+    geom_segment(aes(x = 4, y = 4, xend = 12, yend = 12), linetype=2, size = 0.1) + 
+    ylim (c(4, 7.5)) 
+  print(p)
+  ggsave(paste(prout, "PerfRFregname_CV10.png", sep = ""), width = 8,height = 8, dpi = 300)
+  
+  return(outmodelCV)
+}
+
+RFreg_tuneRF = function (dtrain, dtest, dcluster, ntree, prout){
+  
+  pmodel = paste(prout, "model.RData", sep = "")
+  if(file.exists(pmodel)){
+    load(pmodel)
+    
+    valr2train = outmodel$train[1]
+    valr2test = outmodel$test[1]
+    
+    dpred = read.csv(paste(prout, "perfTestRFRegPred.csv", sep = ""), header = TRUE)
+    #colnames(dpred) = c("Yreal", "Ypredict")
+    dpred = as.data.frame(dpred)
+    rownames(dpred) = dpred[,1]
+    
+    
+    # only point - TEST
+    theme_set(theme_grey())
+    p = ggplot(dpred, aes(Yreal, Ypredict))+
+      geom_point(size=1.5, colour="black", shape=21) + 
+      geom_text(x=4.3, y=7.2, label = paste("R2=",round(valr2test,2), sep = ""), size = 8)+
+      labs(x = "Experimental pIC50", y = "Predicted pIC50") +
+      theme(axis.text.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.text.x = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.x =  element_text(size = 25, hjust = 0.5, vjust =0.1))+
+      xlim (c(4, 7.5)) +
+      geom_segment(aes(x = 4, y = 4, xend = 7.5, yend = 7.5), linetype=2, size = 0.5) +  
+      ylim (c(4, 7.5))
+    ggsave(paste(prout, "PerfRFregpoint_Test.png", sep = ""), width = 7,height = 7, dpi = 300)
+    
+    
+    
+    # with label - TEST
+    p = ggplot(dpred, aes(Yreal, Ypredict, label=rownames(dpred)))+
+      geom_point(size=1.5, colour="black", shape=21) + 
+      geom_text(x=4.3, y=7.2, label = paste("R2=",round(valr2test,2), sep = ""), size = 8)+
+      labs(x = "pAff", y = "Predicted pAff") +
+      geom_text(size = 2.6, aes(label= rownames(dpred)), parse = TRUE, color="black", nudge_y = 0.06) + 
+      labs(x = "Experimental pIC50", y = "Predicted pIC50") + 
+      theme(axis.text.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.text.x = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.x =  element_text(size = 25, hjust = 0.5, vjust =0.1))+
+      xlim (c(4, 7.5))  +
+      geom_segment(aes(x = 4, y = 4, xend = 7.5, yend = 7.5), linetype=2, size = 0.5) + 
+      ylim (c(4, 7.5))  
+    #print(p)
+    ggsave(paste(prout, "PerfRFregname_Test.png", sep = ""), width = 8,height = 8, dpi = 300)
+    
+    
+    dpred = read.csv(paste(prout, "perfTrainRFRegPred.csv", sep = ""), header = TRUE)
+    dpred = as.data.frame(dpred)
+    rownames(dpred) = dpred[,1]
+    
+    # only point - TRAIN
+    theme_set(theme_grey())
+    p = ggplot(dpred, aes(Yreal, Ypredict))+
+      geom_point(size=1.5, colour="black", shape=21) + 
+      geom_text(x=4.3, y=7.2, label = paste("R2=",round(valr2train,2), sep = ""), size = 8)+
+      labs(x = "Experimental pMIC", y = "Predicted pMIC") +
+      theme(axis.text.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.text.x = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.y = element_text(size = 25, hjust = 0.5, vjust =0.1), axis.title.x =  element_text(size = 25, hjust = 0.5, vjust =0.1))+
+      xlim (c(4, 7.5)) +
+      geom_segment(aes(x = 3.5, y = 3.5, xend = 8, yend = 8), linetype=1, size = 0.1) + 
+      ylim (c(4, 7.5))
+    ggsave(paste(prout, "PerfRFregpoint_Train.png", sep = ""), width = 6,height = 6, dpi = 300)
+    
+    
+    return(outmodel) 
+  }
+  
+  Aff = dtrain$Aff
+  dtrain_tune = dtrain[,-c(which(colnames(dtrain) == "Aff"))]
+  
+  bestmtry <- tuneRF(dtrain_tune, Aff, stepFactor=1.5, improve=1e-5, ntree=ntree)
+  
+  modelRF = randomForest( Aff~., data = dtrain, mtry=bestmtry, ntree=as.integer(ntree), type = "response",  importance=TRUE)
+  vpredtrain = predict (modelRF, dtrain, type = "response")
+  vpredtest = predict (modelRF, dtest, type = "response")
+  
+  names(vpredtrain) = rownames(dtrain)
+  names(vpredtest) = rownames(dtest)
+  
+  testw = cbind(dtest[,"Aff"], vpredtest)
+  colnames(testw) = c("Yreal", "Ypredict")
+  write.csv(testw, paste(prout, "perfTestRFRegPred.csv"))
+  
+  trainw = cbind(dtrain[,"Aff"], vpredtrain)
+  colnames(trainw) = c("Yreal", "Ypredict")
+  write.csv(trainw, paste(prout, "perfTrainRFRegPred.csv"))  
+  
   r2train = calR2(dtrain[,"Aff"], vpredtrain)
   cortrain = cor(dtrain[,"Aff"], vpredtrain)
   RMSEPtrain = vrmsep(dtrain[,"Aff"], vpredtrain)
