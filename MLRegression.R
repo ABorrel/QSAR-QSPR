@@ -15,6 +15,7 @@ library(caret)
 library(clusterGeneration)
 library(stringr)
 library(reshape2)
+library(dplyr)
 
 ##################
 #    PCR MODELS  #
@@ -2199,7 +2200,10 @@ RFreg_tuneRF = function (dtrain, dtest, dcluster, ntree, prout){
 #   CART    #
 #############
 
-CARTRegCV = function(lfolds, dcluster, prout){
+
+
+
+CARTRegCV = function(lfolds, vminsplit, vmaxdepth, dcluster, prout){
   
   pmodel = paste(prout, "modelCV.RData", sep = "")
   if(file.exists(pmodel) == TRUE){
@@ -2228,7 +2232,8 @@ CARTRegCV = function(lfolds, dcluster, prout){
       }
     }
     
-    modelCART = rpart( Aff~., data = dtrain, method = "anova")#, control = rpart.control(cp = 0.05))
+    params = CARTOpt(dtrain, vminsplit, vmaxdepth)
+    modelCART = rpart( Aff~., data = dtrain, method = "anova", control = list(minsplit = params[1], maxdepth = params[2], cp = 0.01))
     vpred = predict(modelCART, dtest[,-dim(dtest)[2]], type = "vector")
     names(vpred) = rownames(dtest)
     
@@ -2288,7 +2293,7 @@ CARTRegCV = function(lfolds, dcluster, prout){
   return(outmodelCV)
 }
 
-CARTreg = function (dtrain, dtest, dcluster, prout){
+CARTreg = function (dtrain, dtest, vminsplit, vmaxdepth, dcluster, prout){
   
   pmodel = paste(prout, "model.RData", sep = "")
   if(file.exists(pmodel)){
@@ -2296,7 +2301,8 @@ CARTreg = function (dtrain, dtest, dcluster, prout){
     return(outmodel) 
   }
   
-  modelCART = rpart( Aff~., data = dtrain, method = "anova")#, control = rpart.control(cp = 0.05))
+  params = CARTOpt(dtrain, vminsplit, vmaxdepth)
+  modelCART = rpart( Aff~., data = dtrain, method = "anova", control = list(minsplit = params[1], maxdepth = params[2], cp = 0.01))
   
   pdf(paste(prout, "TreeCARTReg-Train.pdf",sep = ""))
   plotcp(modelCART)
@@ -2390,4 +2396,52 @@ CARTreg = function (dtrain, dtest, dcluster, prout){
   
   return(outmodel)
   
+}
+
+# function to get optimal cp
+get_cp <- function(x) {
+  min    <- which.min(x$cptable[, "xerror"])
+  cp <- x$cptable[min, "CP"] 
+}
+
+# function to get minimum error
+get_min_error <- function(x) {
+  min    <- which.min(x$cptable[, "xerror"])
+  xerror <- x$cptable[min, "xerror"] 
+}
+
+CARTOpt = function(dtrain, vminsplit, vmaxdepth){
+  
+  # define grid
+  hyper_grid <- expand.grid(
+    minsplit = vminsplit,
+    maxdepth = vmaxdepth
+  )
+  
+  models <- list()
+  
+  for (i in 1:nrow(hyper_grid)) {
+    
+    # get minsplit, maxdepth values at row i
+    minsplit <- hyper_grid$minsplit[i]
+    maxdepth <- hyper_grid$maxdepth[i]
+    
+    # train a model and store in the list
+    models[[i]] <- rpart(
+      formula = Aff ~ .,
+      data    = dtrain,
+      method  = "anova",
+      control = list(minsplit = minsplit, maxdepth = maxdepth)
+    )
+  }
+  
+  hyper_grid %>%
+    mutate(
+      cp    = purrr::map_dbl(models, get_cp),
+      error = purrr::map_dbl(models, get_min_error)
+    ) %>%
+    arrange(error) %>%
+    top_n(-5, wt = error)
+  
+  return(list(hyper_grid[1,1],hyper_grid[1,2]))
 }

@@ -20,14 +20,26 @@ nbCV = as.integer(args[5])
 internalCV = as.integer(args[6])
 
 
-# to test
-ptrain = "c:/Users/aborr/research/ILS/HERG/results/QSARreg/1/trainSet.csv"
-ptest = "c:/Users/aborr/research/ILS/HERG/results/QSARreg/1/testSet.csv"
-pcluster = "0"
-prout = "c:/Users/aborr/research/ILS/HERG/results/QSARreg/1/"
+# to test => HERG
+#ptrain = "c:/Users/aborr/research/ILS/HERG/results/QSARreg/1/trainSet.csv"
+#ptest = "c:/Users/aborr/research/ILS/HERG/results/QSARreg/1/testSet.csv"
+#pcluster = "0"
+#prout = "c:/Users/aborr/research/ILS/HERG/results/QSARreg/1/"
 # cross validation 10
-nbCV = 10
-internalCV = 1
+#nbCV = 10
+#internalCV = 1
+
+
+
+# to test => fluoroQ
+#ptrain = "c:/Users/aborr/research/NCSU/Fluoroquinolones/for_revision/QSARS5_best/Staphylococcus.aureus_trainSet.csv"
+#ptest = "c:/Users/aborr/research/NCSU/Fluoroquinolones/for_revision/QSARS5_best/Staphylococcus.aureus_testSet.csv"
+#pcluster = "0"
+#prout = "c:/Users/aborr/research/NCSU/Fluoroquinolones/for_revision/QSARS5_best/Staphylococcus.aureus/"
+# cross validation 10
+#nbCV = 10
+#internalCV = 1
+
 
 # model regression #
 ####################
@@ -184,7 +196,7 @@ if(modelSVMreg == 1){
   proutSVM_linear = paste(prout, "SVMreg_linear/", sep = "")
   dir.create(proutSVM_linear)
   vgamma = 2^(-2:2)
-  vcost = 10^(2:2)
+  vcost = 10^(-2:2)
   outSVMCV_linear = SVMRegCV(lgroupCV, vgamma, vcost, dcluster, "linear" , proutSVM_linear)
   outSVM_linear = SVMRegTrainTest(dtrain, dtest, vgamma, vcost, dcluster, "linear" ,proutSVM_linear)
   
@@ -192,7 +204,7 @@ if(modelSVMreg == 1){
   proutSVM_radial = paste(prout, "SVMreg_radial/", sep = "")
   dir.create(proutSVM_radial)
   vgamma = 2^(-2:2)
-  vcost = 10^(2:2)
+  vcost = 10^(-2:2)
   outSVMCV_radial = SVMRegCV(lgroupCV, vgamma, vcost, dcluster, "radial", proutSVM_radial)
   outSVM_radial = SVMRegTrainTest(dtrain, dtest, vgamma, vcost, dcluster, "radial", proutSVM_radial)
   
@@ -201,7 +213,7 @@ if(modelSVMreg == 1){
   proutSVM_sigmoid = paste(prout, "SVMreg_sigmoid/", sep = "")
   dir.create(proutSVM_sigmoid)
   vgamma = 2^(-2:2)
-  vcost = 10^(2:2)
+  vcost = 10^(-2:2)
   outSVMCV_sigmoid = SVMRegCV(lgroupCV, vgamma, vcost, dcluster, "sigmoid" ,proutSVM_sigmoid)
   outSVM_sigmoid = SVMRegTrainTest(dtrain, dtest, vgamma, vcost, dcluster, "sigmoid" ,proutSVM_sigmoid)
   
@@ -210,7 +222,7 @@ if(modelSVMreg == 1){
   proutSVM_polynomial = paste(prout, "SVMreg_polynomial/", sep = "")
   dir.create(proutSVM_polynomial)
   vgamma = 2^(-2:2)
-  vcost = 10^(2:2)
+  vcost = 10^(-2:2)
   outSVMCV_polynomial = SVMRegCV(lgroupCV, vgamma, vcost, dcluster, "polynomial", proutSVM_polynomial)
   outSVM_polynomial = SVMRegTrainTest(dtrain, dtest, vgamma, vcost, dcluster, "polynomial", proutSVM_polynomial)
   
@@ -244,8 +256,10 @@ if (modelRFreg == 1){
 if(modelCartreg == 1){
   proutCART = paste(prout, "CARTreg/", sep = "")
   dir.create(proutCART)
-  outCARTCV = CARTRegCV(lgroupCV, dcluster, proutCART)
-  outCART = CARTreg(dtrain, dtest, dcluster, proutCART)
+  vminsplit = 1:20
+  vmaxdepth = 5:30
+  outCARTCV = CARTRegCV(lgroupCV, vminsplit, vmaxdepth, dcluster, proutCART)
+  outCART = CARTreg(dtrain, dtest, vminsplit, vmaxdepth, dcluster, proutCART)
 }
 
 
