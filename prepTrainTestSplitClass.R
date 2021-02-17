@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-source("./../R_toolbox/dataManager.R")
+library(Toolbox)
 
 
 ################
@@ -33,6 +33,8 @@ if (splitFact == 0){
   dtest = rbind(ld1split[[2]], ld2split[[2]])
   rownames(dtrain) = dtrain[,1]
   rownames(dtest) = dtest[,1]
+  
+  print(prout)
   
   write.csv(dtrain, paste(prout, "train.csv", sep = ""), row.names = FALSE)
   write.csv(dtest, paste(prout, "test.csv", sep = ""), row.names = FALSE)

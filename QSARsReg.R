@@ -1,10 +1,9 @@
 #!/usr/bin/env Rscript
-library("Toolbox")
+library(Toolbox)
 source("MLRegression.R")
 source("performance.R")
-
-#library(chemmodlab)
 library (rpart)
+
 
 
 
@@ -21,10 +20,11 @@ internalCV = as.integer(args[6])
 
 
 # to test => HERG
-#ptrain = "c:/Users/aborr/research/ILS/HERG/results/QSARreg/1/trainSet.csv"
-#ptest = "c:/Users/aborr/research/ILS/HERG/results/QSARreg/1/testSet.csv"
+#ptrain = "c:/Users/aborr/research/ILS/HERG/results/NCAST_CHEMBL/QSARReg_NCAST_CHEMBL__0.9-90-5-10-0.15-0/1/trainSet.csv"
+#ptest = "c:/Users/aborr/research/ILS/HERG/results/NCAST_CHEMBL/QSARReg_NCAST_CHEMBL__0.9-90-5-10-0.15-0/1/testSet.csv"
 #pcluster = "0"
-#prout = "c:/Users/aborr/research/ILS/HERG/results/QSARreg/1/"
+#prout = "c:/Users/aborr/research/ILS/HERG/results/NCAST_CHEMBL/QSARReg_NCAST_CHEMBL__0.9-90-5-10-0.15-0/1/"
+
 # cross validation 10
 #nbCV = 10
 #internalCV = 1
@@ -49,8 +49,6 @@ modelSVMreg = 1
 modelRFreg = 1
 modelCartreg = 1
 modelNNreg = 1
-modelDLreg = 0 #old creation of DNN using R
-chemmodlabreg = 0
 
 
 
@@ -73,8 +71,6 @@ print(paste("SVM: ", modelSVMreg, sep = ""))
 print(paste("CART: ", modelCartreg, sep = ""))
 print(paste("RF: ", modelRFreg, sep = ""))
 print(paste("NN: ", modelNNreg, sep = ""))
-print(paste("DP: ", modelDLreg, sep = ""))
-print(paste("Chemmodlab: ", chemmodlabreg, sep = ""))
 print("")
 
 
@@ -195,8 +191,8 @@ if(modelSVMreg == 1){
   # linear
   proutSVM_linear = paste(prout, "SVMreg_linear/", sep = "")
   dir.create(proutSVM_linear)
-  vgamma = 2^(-2:2)
-  vcost = 10^(-2:2)
+  vcost = 2^(-1:1)
+  vgamma = 10^(-1:-3)
   outSVMCV_linear = SVMRegCV(lgroupCV, vgamma, vcost, dcluster, "linear" , proutSVM_linear)
   outSVM_linear = SVMRegTrainTest(dtrain, dtest, vgamma, vcost, dcluster, "linear" ,proutSVM_linear)
   
@@ -263,23 +259,6 @@ if(modelCartreg == 1){
 }
 
 
-#############
-# CHEMMOLAB #
-#############
-
-if(chemmodlabreg == 1){
-  dchem = cbind(dtrain[,dim(dtrain)[2]],dtrain[,-dim(dtrain)[2]] )
-  colnames(dchem)[1] = "Aff"
-  
-  pdf(paste(prout, "Reg_chemmolab.pdf", sep = ""))
-  fit = ModelTrain(dchem, ids = FALSE)
-  CombineSplits(fit, metric = "R2")
-  CombineSplits(fit, metric = "rho")
-  dev.off()
-}
-
-
-
 ####################
 #  NEURAL NETWORK  #
 ####################
@@ -295,18 +274,6 @@ if(modelNNreg ==1){
   outNN = NNReg(dtrain, dtest, dcluster,vdecay, vsize, proutNN)
   
 }
-
-
-####################
-#  DEEP LEARNING   #
-####################
-
-# treated with keras in python
-
-#if(modelDLreg ==1){
-#  #DLRegCV(lgroupCV, dcluster, prout)
-#  DLReg(dtrain, dtest, dcluster, prout)
-#}
 
 
 #############################

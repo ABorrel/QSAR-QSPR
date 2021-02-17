@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 source("performance.R")
 library("pls")
-source("./../R_toolbox/dataManager.R")
+library(Toolbox)
 library(randomForest)
 library(MASS)
 library(rpart)
@@ -41,7 +41,9 @@ SVMClassTrainTest = function(dtrain, dtest, vgamma, vcost, ksvm, prout){
   print(paste("====SVM-", ksvm, " in train-test --- Automatic optimization CV-10====", sep = ""))
   
   # optimisation on CV-10
-  modelsvm = SVMTuneClass(dtrain, vgamma, vcost, ksvm, 10)
+  dtrain$Aff = as.factor(dtrain$Aff)
+  modelsvm = tune(svm, Aff~., data = dtrain, scale=TRUE, ranges = list(gamma = vgamma, cost = vcost, type="C-classification", kernel=ksvm), tunecontrol = tune.control(cross = 10))
+  modelsvm = modelsvm$best.model
   
   predsvmtest = predict(modelsvm, dtest[,-c(which(colnames(dtest) == "Aff"))])
   predsvmtrain = predict(modelsvm, dtrain[,-c(which(colnames(dtrain) == "Aff"))])
@@ -50,7 +52,7 @@ SVMClassTrainTest = function(dtrain, dtest, vgamma, vcost, ksvm, prout){
   names(predsvmtest) = rownames(dtest)
   
   # performances = train
-  dpredtrain = cbind(dtrain[,"Aff"], as.character(predsvmtrain))
+  dpredtrain = cbind(as.character(dtrain[,"Aff"]), as.character(predsvmtrain))
   colnames(dpredtrain) = c("Real", "Predict")
   write.csv(dpredtrain, paste(prout, "TrainPred.csv", sep = ""))
   
@@ -137,15 +139,16 @@ SVMClassCV = function(lgroupCV, vgamma, vcost, ksvm, prout){
     }
     
     dtrain$Aff = as.factor(dtrain$Aff)
+    modtune = tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost,kernel=ksvm),scale=TRUE, tunecontrol = tune.control(sampling = "fix"))
     
+    #modtune = tryCatch(tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost, type="nu-classification", kernel=ksvm), tunecontrol = tune.control(sampling = "fix")),
+    #                   error = function(e) {return("NA")})
     
-    modtune = tryCatch(tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost, type="nu-classification", kernel=ksvm), tunecontrol = tune.control(sampling = "fix")),
-                       error = function(e) {return("NA")})
+    #if(is.character(modtune)){
+    #  modtune = tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost, type="C-classification", kernel=ksvm), tunecontrol = tune.control(sampling = "fix"))
+    #}
     
-    
-    if(is.character(modtune)){
-      modtune = tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost, type="C-classification", kernel=ksvm), tunecontrol = tune.control(sampling = "fix"))
-    }
+    print(modtune)
     
     vpred = predict (modtune$best.model, dtest, decision.values = TRUE)
     vpred = as.double(vpred)

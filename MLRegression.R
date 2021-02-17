@@ -524,7 +524,7 @@ SVMRegCV = function(lfolds, vgamma, vcost, dcluster, kernel_svm, prout){
       }
     }
     
-    modtune = SVMTune2(dtrain, vgamma, vcost, kernel_svm, 10)
+    modtune = SVMTune(dtrain, vgamma, vcost, kernel_svm, 10)
     
     #print(dtest)
     y_real = append(y_real, dtest[,"Aff"])
@@ -593,7 +593,7 @@ SVMRegTrainTest = function(dtrain, dtest, vgamma, vcost, dcluster, kernel_svm, p
   print(paste("==== SVM in train-test ", kernel_svm,"--- Automatic optimization CV-10====", sep = ""))
   
   # optimisation on CV-10
-  modelsvm = SVMTune2(dtrain, vgamma, vcost, kernel_svm, 10)
+  modelsvm = SVMTune(dtrain, vgamma, vcost, kernel_svm, 10)
   
   predsvmtest = predict(modelsvm, dtest[,-c(which(colnames(dtest) == "Aff"))])
   predsvmtrain = predict(modelsvm, dtrain[,-c(which(colnames(dtrain) == "Aff"))])
@@ -682,59 +682,14 @@ SVMRegTrainTest = function(dtrain, dtest, vgamma, vcost, dcluster, kernel_svm, p
   return(outmodel)
 }
 
-SVMTune = function(dtrain, vgamma, vcost, kernel_svm, nbCV){
-  
-  
-  lfolds = samplingDataNgroup(dtrain, nbCV)
-  lmodel = list()
-  lR2best = NULL
-  
-  k = 1
-  kmax = length(lfolds)
-  while(k <= kmax){
-    dtrain = NULL
-    dtest = NULL
-    for (m in seq(1:kmax)){
-      lcpd = rownames(lfolds[[m]])
-      if (m == k){
-        dtest = as.data.frame(lfolds[[m]])
-      }else{
-        dtrain = rbind(dtrain, lfolds[[m]])
-      }
-    }
-    
-    #dtrain = as.data.frame(scale(dtrain))
-    ddestrain = dtrain[,-c(which(colnames(dtrain) == "Aff"))]
-    #ddestrain = scale(ddestrain)
-    Aff = dtrain[,c("Aff")]
-    
-    
-    #dtest = as.data.frame(scale(dtest))
-    dtestAff = dtest[,"Aff"]
-    ddesctest = dtest[,-c(which(colnames(dtest) == "Aff"))]
-    #ddesctest = scale(ddesctest, center = attr(ddestrain, 'scaled:center'), scale = attr(ddestrain, 'scaled:scale'))
-    
-    modelsvm = tune(svm, train.x = ddestrain, train.y = Aff, ranges = list(gamma = vgamma, cost = vcost), tunecontrol = tune.control(sampling = "cross"), kernel = kernel_svm)
-    modelsvm = modelsvm$best.model
-    
-    vpred = predict(modelsvm, ddesctest)
-    
-    R2 = calR2(dtestAff, vpred)
-    #print(R2)
-    lR2best = append(lR2best, R2)
-    lmodel[[k]] =  modelsvm
-    k = k + 1 
-    
-  }
-  return(lmodel[[which(lR2best == max(lR2best))]])
-}  
 
-SVMTune2 =  function(dtune, vgamma, vcost, kernel_svm, nbCV){
+
+SVMTune =  function(dtune, vgamma, vcost, kernel_svm, nbCV){
   
   Aff = dtune[,c("Aff")]
   dtune = dtune[,-c(which(colnames(dtune) == "Aff"))]
   
-  modelsvm = tune(svm, train.x = dtune, train.y = Aff, ranges = list(gamma = vgamma, cost = vcost), tunecontrol = tune.control(sampling = "cross"), kernel = kernel_svm)
+  modelsvm = tune(svm, train.x = dtune, train.y = Aff, ranges = list(gamma = vgamma, cost = vcost), tunecontrol = tune.control(sampling = "fix"), scale=TRUE, kernel = kernel_svm)
   modelsvm = modelsvm$best.model
  
   return(modelsvm) 

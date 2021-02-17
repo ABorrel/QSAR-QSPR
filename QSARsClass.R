@@ -1,9 +1,7 @@
 #!/usr/bin/env Rscript
-source("./../R_toolbox/dataManager.R")
+library(Toolbox)
 source("MLClassification.R")
 source("performance.R")
-
-library(chemmodlab)
 library (rpart)
 ################
 #     MAIN     #
@@ -18,10 +16,10 @@ prout = args[4]
 nbCV = as.integer(args[5])
 
 
-#ptrain = "C:/Users/Aborrel/research/ILS/HERG/results/QSAR/1/train.csv" 
-#ptest = "C:/Users/Aborrel/research/ILS/HERG/results/QSAR/1/test.csv" 
+#ptrain = "C://Users/aborr/research/ILS/HERG/results/NCAST_CHEMBL/QSAR_NCAST_CHEMBL__0.9-90-5-10-0.15-0/sampleTraningSet/1/train.csv" 
+#ptest = "C://Users/aborr/research/ILS/HERG/results/NCAST_CHEMBL/QSAR_NCAST_CHEMBL__0.9-90-5-10-0.15-0/sampleTraningSet/test.csv" 
 #pcluster = "0"
-#prout = "C:/Users/Aborrel/research/ILS/HERG/results/QSAR/1/"
+#prout = "C://Users/aborr/research/ILS/HERG/results/NCAST_CHEMBL/QSAR_NCAST_CHEMBL__0.9-90-5-10-0.15-0/sampleTraningSet/1/"
 #nbCV = 10
 
 
@@ -42,7 +40,6 @@ modelRFclass = 1
 modelLDAclass = 1
 modelCartclass = 1
 modelNNclass = 1
-chemmodlabclass = 0
 
 
 
@@ -64,7 +61,6 @@ print(paste("CART: ", modelCartclass, sep = ""))
 print(paste("LDA: ", modelLDAclass, sep = ""))
 print(paste("RF: ", modelRFclass, sep = ""))
 print(paste("NN: ", modelNNclass, sep = ""))
-print(paste("Chemmodlab: ", chemmodlabclass, sep = ""))
 print("")
 
 
@@ -132,8 +128,10 @@ if(modelSVMclass == 1){
   
   prSVM = paste(prout, "SVMclass_linear/", sep = "")
   dir.create(prSVM)
-  vgamma = 2^(-1:1)
-  vcost = 2^(2:8)
+  #vgamma = 2^(-2:2)
+  #vcost = 2^(-2:2)
+  vcost = 2^(-1:1)
+  vgamma = 10^(-1:-3)
   ksvm = "linear"
   outSVMCV_linear = SVMClassCV(lgroupCV, vgamma, vcost, ksvm, prSVM)
   outSVM_linear = SVMClassTrainTest(dtrain, dtest, vgamma, vcost, ksvm, prSVM)

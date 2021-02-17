@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-source("./../R_toolbox/dataManager.R")
+library(Toolbox)
 
 # script use to define a class dataset based on a rate of active chemicals
 
