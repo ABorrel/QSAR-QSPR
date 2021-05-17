@@ -45,7 +45,6 @@ if(exists("Aff", where=ddesc)){
 daff = read.csv(p_aff, sep = ",", header = TRUE)
 rownames(daff) = daff[,1]
 
-
 l_inter = intersect(rownames(ddesc), rownames(daff))
 daff = daff[l_inter,]
 ddesc = ddesc[l_inter,]
@@ -70,7 +69,11 @@ nb_active = dim(d1)[1]
 
 # use to limit the dataset
 if(rate_act != 0){
-  nb_inactive = 100*nb_active/(rate_act*100)
+  nb_tot = 100 * nb_active /(rate_act *100)
+  nb_inactive = nb_tot - nb_active
+  if (nb_inactive > dim(d0)[1]){
+     nb_inactive = dim(d0)[1]
+  }
   print(nb_inactive)
 }else{
   nb_inactive = dim(d0)[1]# we take all acitve

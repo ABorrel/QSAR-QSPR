@@ -16,10 +16,14 @@ prout = args[4]
 nbCV = as.integer(args[5])
 
 
-#ptrain = "C://Users/aborr/research/ILS/HERG/results/NCAST_CHEMBL/QSAR_NCAST_CHEMBL__0.9-90-5-10-0.15-0/sampleTraningSet/1/train.csv" 
-#ptest = "C://Users/aborr/research/ILS/HERG/results/NCAST_CHEMBL/QSAR_NCAST_CHEMBL__0.9-90-5-10-0.15-0/sampleTraningSet/test.csv" 
+
+#./QSARsClass.R /mnt/c/Users/aborr/research/ILS/HERG/results/NCAST/QSAR_NCAST__0.9-90-5-10-0.15-0.3/sampleTraningSet/test.csv 0 /mnt/c/Users/aborr/research/ILS/HERG/results/NCAST/QSAR_NCAST__0.9-90-5-10-0.15-0.3/sampleTraningSet/1/ 10 > /mnt/c/Users/aborr/research/ILS/HERG/results/NCAST/QSAR_NCAST__0.9-90-5-10-0.15-0.3/sampleTraningSet/1/perf.txt
+
+
+#ptrain = "C://Users/aborr/research/ILS/HERG/results/NCAST/QSAR_NCAST__0.9-90-5-10-0.15-0.3/sampleTraningSet/1/train.csv" 
+#ptest = "C://Users/aborr/research/ILS/HERG/results/NCAST/QSAR_NCAST__0.9-90-5-10-0.15-0.3/sampleTraningSet/test.csv" 
 #pcluster = "0"
-#prout = "C://Users/aborr/research/ILS/HERG/results/NCAST_CHEMBL/QSAR_NCAST_CHEMBL__0.9-90-5-10-0.15-0/sampleTraningSet/1/"
+#prout = "C://Users/aborr/research/ILS/HERG/results/NCAST/QSAR_NCAST__0.9-90-5-10-0.15-0.3/sampleTraningSet/1/"
 #nbCV = 10
 
 
@@ -35,11 +39,11 @@ nbCV = as.integer(args[5])
 
 # model classification #
 ########################
-modelSVMclass = 1
+modelSVMclass = 0
 modelRFclass = 1
 modelLDAclass = 1
 modelCartclass = 1
-modelNNclass = 1
+modelNNclass = 0
 
 
 

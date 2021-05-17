@@ -127,6 +127,7 @@ SVMClassCV = function(lgroupCV, vgamma, vcost, ksvm, prout){
   y_predict = NULL
   y_real = NULL
   y_proba = NULL
+  y_names = NULL
   while(k <= kmax){
     dtrain = NULL
     dtest = NULL
@@ -141,15 +142,7 @@ SVMClassCV = function(lgroupCV, vgamma, vcost, ksvm, prout){
     dtrain$Aff = as.factor(dtrain$Aff)
     modtune = tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost,kernel=ksvm),scale=TRUE, tunecontrol = tune.control(sampling = "fix"))
     
-    #modtune = tryCatch(tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost, type="nu-classification", kernel=ksvm), tunecontrol = tune.control(sampling = "fix")),
-    #                   error = function(e) {return("NA")})
-    
-    #if(is.character(modtune)){
-    #  modtune = tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost, type="C-classification", kernel=ksvm), tunecontrol = tune.control(sampling = "fix"))
-    #}
-    
     print(modtune)
-    
     vpred = predict (modtune$best.model, dtest, decision.values = TRUE)
     vpred = as.double(vpred)
     vpred[which(vpred == 1)] = 0
@@ -159,6 +152,7 @@ SVMClassCV = function(lgroupCV, vgamma, vcost, ksvm, prout){
     
     y_predict = append(y_predict, vpred)
     y_real = append(y_real, dtest[,"Aff"])
+    y_names = append(y_names, rownames(dtest))
     k = k + 1
   }
   
@@ -171,6 +165,7 @@ SVMClassCV = function(lgroupCV, vgamma, vcost, ksvm, prout){
   
   dpred = cbind(y_proba, y_real)
   colnames(dpred) = c("Predict", "Real")
+  rownames(dpred) = y_names
   write.csv(dpred, file = paste(prout, "CVPred-", length(lgroupCV), ".csv", sep = ""))
   
   print("Perfomances in CV")
@@ -627,6 +622,23 @@ RFClassCV = function(lfolds, ntree, mtry, prout){
     segments(i, dimportance[i,1] - dimportance[i,2], i, dimportance[i,1] + dimportance[i,2])
   }
   dev.off()
+  
+  dimportance[,1] = scale(dimportance[,1])
+  val = sort(dimportance[,1], decreasing = T)[1:10]
+  Desc = names(val)
+  dtop = cbind(Desc, val)
+  dtop = as.data.frame(dtop)
+  dtop$val = as.double(as.character(dtop$val))
+  
+  ggplot(dtop, aes(val, Desc))+
+    geom_point(aes(color = "1"))  +labs(x = "Importance", y = "Descriptor") +
+    theme(legend.position = "none")+
+    theme(axis.text.y = element_text(size = 12, hjust = 0.5, vjust =0.1), axis.text.x = element_text(size = 12, hjust = 0.5, vjust =0.1), axis.title.y = element_text(size = 14, hjust = 0.5, vjust =0.1), axis.title.x =  element_text(size = 14, hjust = 0.5, vjust =0.1))
+  
+  ggsave(paste(prout, "Top10ImportanceRFClassCV", length(lfolds), ".png", sep = ""), dpi=300, height = 7, width = 5)
+  
+  
+  
   
   save(outmodelCV, file = paste(prout, "modelCV.RData", sep = ""))
   return(outmodelCV)
