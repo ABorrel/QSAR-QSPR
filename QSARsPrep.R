@@ -168,6 +168,19 @@ if(dim(daffinity)[2] == 2){
 }else{
   for(afftype in colnames(daffinity)[-1]){
     print (afftype)
+    if (afftype == "Aff"){
+      Aff = daffinity[rownames(dtrain),afftype]
+      dtrainglobal = cbind(dtrain, Aff)
+      write.csv(dtrainglobal, paste(prout, "trainSet.csv", sep = ""))
+      
+      # test set
+      Aff = daffinity[rownames(dtest),afftype]
+      dtestglobal = cbind(dtest, Aff)
+      write.csv(dtestglobal, paste(prout, "testSet.csv", sep = ""))
+      
+      lcontrol = list(dtrainglobal, dtestglobal)
+      controlDatasets(lcontrol, paste(prout, "qualitySplit", sep = ""))
+    }
     # training set
     Aff = daffinity[rownames(dtrain),afftype]
     dtrainglobal = cbind(dtrain, Aff)
