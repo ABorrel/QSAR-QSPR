@@ -12,9 +12,9 @@ p_sim_matrix = args[1]
 p_matrix_chem = args[2]
 pr_out = args[3]
 
-p_sim_matrix = "/mnt/c/Users/AlexandreBorrel/research/SSI/E2up_P4up/results/QSAR_P4_H295R_variable-sampling_singledosecheck_noborderline/mat_sim_MACCS_Tanimoto.csv"
-p_matrix_chem = "/mnt/c/Users/AlexandreBorrel/research/SSI/E2up_P4up/results/QSAR_P4_H295R_variable-sampling_singledosecheck_noborderline/rdkit-OPERA-toxprint_0.9-0/classQSAR/6/AD/chem_similarity/chem.csv"
-pr_out = "/mnt/c/Users/AlexandreBorrel/research/SSI/E2up_P4up/results/QSAR_P4_H295R_variable-sampling_singledosecheck_noborderline/rdkit-OPERA-toxprint_0.9-0/classQSAR/6/AD/chem_similarity/"
+#p_sim_matrix = "/mnt/c/Users/AlexandreBorrel/research/SSI/E2up_P4up/results/QSAR_P4_H295R_variable-sampling_singledosecheck_noborderline/mat_sim_MACCS_Tanimoto.csv"
+#p_matrix_chem = "/mnt/c/Users/AlexandreBorrel/research/SSI/E2up_P4up/results/QSAR_P4_H295R_variable-sampling_singledosecheck_noborderline/rdkit-OPERA-toxprint_0.9-0/classQSAR/6/AD/chem_similarity/chem.csv"
+#pr_out = "/mnt/c/Users/AlexandreBorrel/research/SSI/E2up_P4up/results/QSAR_P4_H295R_variable-sampling_singledosecheck_noborderline/rdkit-OPERA-toxprint_0.9-0/classQSAR/6/AD/chem_similarity/"
 
 
 
@@ -63,7 +63,12 @@ fit_MDS$Dim2 = as.double(as.character(fit_MDS$Dim2))
 cmd_plot<- ggplot(fit_MDS, aes(x=Dim1, y=Dim2)) +
   geom_text(aes(colour=Set, label = rownames(fit_MDS)),  size=2) +
   scale_colour_manual(name = "Set", values = c("Train Act" = "#8dbfe4", "Train Inact" = "#6475e8", "Test Act" = "#f378b5", "Test Inact" = "#a62a9a"))  
-ggsave(paste(pr_out, "CP_similarity.png", sep = ""),  width = 8, height = 6, dpi = 300, bg="transparent")
+ggsave(paste(pr_out, "CP_similarity_text.png", sep = ""),  width = 8, height = 6, dpi = 300, bg="transparent")
+
+cmd_plot<- ggplot(fit_MDS, aes(x=Dim1, y=Dim2)) +
+  geom_point(aes(colour=Set, label = rownames(fit_MDS)),  size=2) +
+  scale_colour_manual(name = "Set", values = c("Train Act" = "#8dbfe4", "Train Inact" = "#6475e8", "Test Act" = "#f378b5", "Test Inact" = "#a62a9a"))  
+ggsave(paste(pr_out, "CP_similarity_point.png", sep = ""),  width = 8, height = 6, dpi = 300, bg="transparent")
 
 # mosaic plot
 #plot(voronoi.mosaic(fit_MDS$Dim1, fit_MDS$Dim2, duplicate="remove"), colors=l_color)

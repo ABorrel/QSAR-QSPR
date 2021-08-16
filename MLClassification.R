@@ -268,23 +268,24 @@ NNClassTrainTest = function(dtrain, dtest, vsize, vdecay, prout){
   print(paste("====NN in train-test --- Automatic optimization CV-10====", sep = ""))
   
   # optimisation on CV-10
-  modelNN = NNTuneClass(dtrain, vsize, vdecay, 10)
+  #modelNN = NNTuneClass(dtrain, vsize, vdecay, 10)
+  modelNN = NNTuneClass2(dtrain, vsize, vdecay, 10, prout)
   
-  predsvmtest = predict(modelNN, dtest[,-c(which(colnames(dtest) == "Aff"))])
-  predsvmtrain = predict(modelNN, dtrain[,-c(which(colnames(dtrain) == "Aff"))])
+  predNNtest = predict(modelNN, dtest[,-c(which(colnames(dtest) == "Aff"))])
+  predNNtrain = predict(modelNN, dtrain[,-c(which(colnames(dtrain) == "Aff"))])
   
   #fix proba => error
   
-  predsvmtrain[which(predsvmtrain < 0.5)] = 0
-  predsvmtrain[which(predsvmtrain >= 0.5)] = 1
-  predsvmtest[which(predsvmtest < 0.5)] = 0
-  predsvmtest[which(predsvmtest >= 0.5)] = 1
+  predNNtrain[which(predNNtrain < 0.5)] = 0
+  predNNtrain[which(predNNtrain >= 0.5)] = 1
+  predNNtest[which(predNNtest < 0.5)] = 0
+  predNNtest[which(predNNtest >= 0.5)] = 1
   
-  names(predsvmtrain) = rownames(dtrain)
-  names(predsvmtest) = rownames(dtest)
+  names(predNNtrain) = rownames(dtrain)
+  names(predNNtest) = rownames(dtest)
   
   # performances = train
-  dpredtrain = cbind(dtrain[,"Aff"], as.character(predsvmtrain))
+  dpredtrain = cbind(dtrain[,"Aff"], as.character(predNNtrain))
   colnames(dpredtrain) = c("Real", "Predict")
   write.csv(dpredtrain, paste(prout, "TrainPred.csv", sep = ""))
   
@@ -295,11 +296,11 @@ NNClassTrainTest = function(dtrain, dtest, vsize, vdecay, prout){
   mcctrain = lpreftrain[[4]]
   
   # performances = test
-  dpredtest = cbind(dtest[,"Aff"], as.character(predsvmtest))
+  dpredtest = cbind(dtest[,"Aff"], as.character(predNNtest))
   colnames(dpredtest) = c("Real", "Predict")
   write.csv(dpredtest, paste(prout, "TestPred.csv", sep = ""))
   
-  lpreftest = classPerf(dtest[,"Aff"], predsvmtest)
+  lpreftest = classPerf(dtest[,"Aff"], predNNtest)
   acctest = lpreftest[[1]]
   setest = lpreftest[[2]]
   sptest = lpreftest[[3]]
@@ -336,7 +337,7 @@ NNClassTrainTest = function(dtrain, dtest, vsize, vdecay, prout){
   outmodel$test = perftest
   outmodel$model = modelNN
   
-  save(outmodel, file = paste(prout, "model.RData", sep = ""))
+  save(outmodel, file = pmodel)
   return(outmodel)
 } 
 
@@ -409,7 +410,7 @@ NNClassCV = function(lgroupCV, vsize, vdecay, prout){
   lscore = c(acc, se, sp, mcc)
   names(lscore) = c("ACC", "SE", "SP", "MCC")
   outmodelCV$CV = lscore
-  save(outmodelCV, file = paste(prout, "modelCV.RData", sep = ""))
+  save(outmodelCV, file = pmodel)
   return(outmodelCV)  
 }
 
@@ -440,6 +441,7 @@ NNTuneClass = function(dtrain, vsize, vdecay, nbCV){
                   method = "nnet", maxit = 75, tuneGrid = my.grid, trace = F, linout = 1) 
     
     vpred = predict (nnfit, dtest)
+    print(vpred)
     #vpred = as.double(vpred)
     
     vpred[which(vpred >= 0.5)] = 1
@@ -460,6 +462,46 @@ NNTuneClass = function(dtrain, vsize, vdecay, nbCV){
   return(lmodel[[which(lMCCbest == max(lMCCbest, na.rm = TRUE))]])
 }  
 
+
+NNTuneClass2 = function(dtrain, vdecay, vsize, nbCV, prout){
+  
+  Aff = as.factor(dtrain[,c("Aff")])
+  print(Aff)
+  dtune = dtrain[,-c(which(colnames(dtrain) == "Aff"))]
+  dtrain$Aff = as.factor(dtrain$Aff)
+  
+  nnetGrid <- expand.grid(decay = vdecay, size=vsize)
+  maxSize <- max(nnetGrid$size)
+  numWts <- 1*(maxSize * (length(Aff) + 1) + maxSize + 1)
+  
+  # set a random seed to ensure repeatability
+  set.seed(2017)
+  
+  ctrl <- trainControl(method = 'repeatedcv',  number = nbCV, verboseIter = FALSE, preProcOptions = list(thresh = 0.75, ICAcomp = 3, k = 5))
+  nnetTune <- train(Aff ~ . -Aff, data = dtrain,
+                    method = "nnet", # train neural network using `nnet` package 
+                    tuneGrid = nnetGrid, # tuning grid
+                    trControl = ctrl, # process customization set before
+                    MaxNWts = numWts,  # maximum number of weight
+                    maxit = 500,
+                    verboseIter = FALSE,
+                    preProcess = c('center', 'scale'),
+                    metric = "Kappa"# maximum iteration
+  )
+  
+  #print(summary(nnetTune))
+  
+  best_size = nnetTune$bestTune$size
+  best_decay = nnetTune$bestTune$decay
+  
+  ggplot(nnetTune) + theme_bw()
+  ggsave(paste(prout, "_Optz.png", sep = ""))
+  
+  #modelNN = nnet(dtune, Aff, size=best_size, linout = T,  maxit = 500, MaxNWts=numWts, decay = best_decay)
+  
+  return(nnetTune) 
+  
+}
 
 
 
@@ -994,7 +1036,7 @@ LDAClassCV = function(lfolds, prout){
   names(lscore) = c("ACC", "SE", "SP", "MCC")
   outmodelCV$CV = lscore
   
-  save(outmodelCV, file = paste(prout, "modelCV.RData", sep = ""))
+  save(outmodelCV, file = pmodel)
   return(outmodelCV)
 }
 
@@ -1068,7 +1110,7 @@ LDAClassTrainTest = function (dtrain, dtest, prout){#, name_barplot, draw_plot, 
   outmodel$test = perftest
   outmodel$model = modelLDA
   
-  save(outmodel, file = paste(prout, "model.RData", sep = ""))
+  save(outmodel, file = pmodel)
   
   
   png(paste(prout, "PerfTrainTest.png", sep = ""), 1600, 800)
