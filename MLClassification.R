@@ -42,18 +42,20 @@ SVMClassTrainTest = function(dtrain, dtest, vgamma, vcost, ksvm, prout){
   
   # optimisation on CV-10
   dtrain$Aff = as.factor(dtrain$Aff)
-  modelsvm = tune(svm, Aff~., data = dtrain, scale=TRUE, ranges = list(gamma = vgamma, cost = vcost, type="C-classification", kernel=ksvm), tunecontrol = tune.control(cross = 10))
+  modelsvm = tune(svm, Aff~., data = dtrain, scale=TRUE, ranges = list(gamma = vgamma, cost = vcost, type="C-classification", kernel=ksvm, probability=TRUE), tunecontrol = tune.control(cross = 10))
   modelsvm = modelsvm$best.model
   
-  predsvmtest = predict(modelsvm, dtest[,-c(which(colnames(dtest) == "Aff"))])
-  predsvmtrain = predict(modelsvm, dtrain[,-c(which(colnames(dtrain) == "Aff"))])
+  predsvmtest = predict(modelsvm, dtest[,-c(which(colnames(dtest) == "Aff"))], probability=TRUE)
+  predsvmtrain = predict(modelsvm, dtrain[,-c(which(colnames(dtrain) == "Aff"))], probability=TRUE)
   
-  names(predsvmtrain) = rownames(dtrain)
-  names(predsvmtest) = rownames(dtest)
+  # format prob
+  predsvmtest = predsvmtest[rownames(dtest), 1]
+  predsvmtrain = predsvmtest[rownames(dtrain), 1]
   
   # performances = train
   dpredtrain = cbind(as.character(dtrain[,"Aff"]), as.character(predsvmtrain))
   colnames(dpredtrain) = c("Real", "Predict")
+  rownames(dpredtrain) = rownames(dtrain)
   write.csv(dpredtrain, paste(prout, "TrainPred.csv", sep = ""))
   
   lpreftrain = classPerf(dpredtrain[,1], dpredtrain[,2])
@@ -61,10 +63,13 @@ SVMClassTrainTest = function(dtrain, dtest, vgamma, vcost, ksvm, prout){
   setrain = lpreftrain[[2]]
   sptrain = lpreftrain[[3]]
   mcctrain = lpreftrain[[4]]
+  auctrain = lpreftrain[[5]]
+  b_acctrain = lpreftrain[[6]]
   
   # performances = test
   dpredtest = cbind(dtest[,"Aff"], as.character(predsvmtest))
   colnames(dpredtest) = c("Real", "Predict")
+  rownames(dpredtest) = rownames(dtest)
   write.csv(dpredtest, paste(prout, "TestPred.csv", sep = ""))
   
   lpreftest = classPerf(dtest[,"Aff"], predsvmtest)
@@ -72,32 +77,38 @@ SVMClassTrainTest = function(dtrain, dtest, vgamma, vcost, ksvm, prout){
   setest = lpreftest[[2]]
   sptest = lpreftest[[3]]
   mcctest = lpreftest[[4]]
+  auctest = lpreftest[[5]]
+  b_acctest = lpreftest[[6]]
   
   print("===== SVM model train-Test =====")
   #print(modelpls$coefficients)
   print(paste("Perf training (dim= ", dim(dtrain)[1], "*", dim(dtrain)[2], "):", sep = ""))
   print(paste("ACC train=", acctrain))
+  print(paste("bACC train=", b_acctrain))
   print(paste("Se train=", setrain))
   print(paste("Sp train=", sptrain))
   print(paste("MCC train=", mcctrain))
+  print(paste("AUC train=", auctrain))
   print("")
   print("")
   
   
   print(paste("Perf test (dim=", dim(dtest)[1], "*", dim(dtest)[2], "):", sep = ""))
   print(paste("ACC test=", acctest))
+  print(paste("bACC test=", b_acctest))
   print(paste("Se test=", setest))
   print(paste("Sp test=", sptest))
   print(paste("MCC test=", mcctest))
+  print(paste("AUC test=", auctest))
   print("")
   print("")
   
   
-  perftrain = c(acctrain, setrain, sptrain, mcctrain)
-  names(perftrain) = c("ACC", "SE", "SP", "MCC")
+  perftrain = c(acctrain, b_acctest, setrain, sptrain, mcctrain, auctrain)
+  names(perftrain) = c("Acc", "b-Acc", "Se", "Sp", "MCC", "AUC")
   
-  perftest = c(acctest, setest, sptest, mcctest)
-  names(perftest) = c("ACC", "SE", "SP", "MCC")
+  perftest = c(acctest, b_acctest, setest, sptest, mcctest, auctest)
+  names(perftest) = c("Acc", "b-Acc", "Se", "Sp", "MCC", "AUC")
   
   outmodel = list()
   outmodel$train = perftrain
@@ -108,7 +119,6 @@ SVMClassTrainTest = function(dtrain, dtest, vgamma, vcost, ksvm, prout){
   return(outmodel)
 } 
   
-  
 SVMClassCV = function(lgroupCV, vgamma, vcost, ksvm, prout){  
   
   pmodel = paste(prout, "modelCV.RData", sep = "")
@@ -116,7 +126,6 @@ SVMClassCV = function(lgroupCV, vgamma, vcost, ksvm, prout){
     load(pmodel)
     return(outmodelCV)
   }
-  
   
   
   print(paste("== SVM-", ksvm , " in CV with ", length(lgroupCV), " Automatic optimization by folds", sep = ""))
@@ -140,18 +149,16 @@ SVMClassCV = function(lgroupCV, vgamma, vcost, ksvm, prout){
     }
     
     dtrain$Aff = as.factor(dtrain$Aff)
-    modtune = tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost,kernel=ksvm),scale=TRUE, tunecontrol = tune.control(sampling = "fix"))
+    modtune = tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost,kernel=ksvm, probability=TRUE),scale=TRUE, tunecontrol = tune.control(sampling = "fix"))
     
     print(modtune)
-    vpred = predict (modtune$best.model, dtest, decision.values = TRUE)
-    vpred = as.double(vpred)
-    vpred[which(vpred == 1)] = 0
-    vpred[which(vpred == 2)] = 1
-    y_proba = append(y_proba, vpred)
-    
+    vpred = predict (modtune$best.model, dtest, probability=TRUE)
+    vpred = attr(vpred, "probabilities")
+    vpred = vpred[,c("1")]
+    vpred = as.double(as.character(vpred))
     
     y_predict = append(y_predict, vpred)
-    y_real = append(y_real, dtest[,"Aff"])
+    y_real = append(y_real, dtest[,c("Aff")])
     y_names = append(y_names, rownames(dtest))
     k = k + 1
   }
@@ -162,93 +169,31 @@ SVMClassCV = function(lgroupCV, vgamma, vcost, ksvm, prout){
   se = lpref[[2]]
   sp = lpref[[3]]
   mcc = lpref[[4]]
+  auc_pred = lpref[[5]]
+  b_acc = lpref[[6]]
   
-  dpred = cbind(y_proba, y_real)
+  dpred = cbind(y_predict, y_real)
   colnames(dpred) = c("Predict", "Real")
   rownames(dpred) = y_names
   write.csv(dpred, file = paste(prout, "CVPred-", length(lgroupCV), ".csv", sep = ""))
   
   print("Perfomances in CV")
   print(paste("acc=", acc, sep = ""))
+  print(paste("b_acc=", b_acc, sep = ""))
   print(paste("se=", se, sep = ""))
   print(paste("sp=", sp, sep = ""))
   print(paste("mcc=", mcc, sep = "")) 
+  print(paste("auc=", auc_pred, sep = "")) 
   print("")
   print("")
   
   outmodelCV = list()
-  lscore = c(acc, se, sp, mcc)
-  names(lscore) = c("ACC", "SE", "SP", "MCC")
+  lscore = c(acc, b_acc, se, sp, mcc, auc_pred)
+  names(lscore) = c("Acc", "b-Acc", "Se", "Sp", "MCC", "AUC")
   outmodelCV$CV = lscore
   save(outmodelCV, file = paste(prout, "modelCV.RData", sep = ""))
   return(outmodelCV)  
 }
-
-
-SVMTuneClass = function(dtrain, vgamma, vcost, ksvm, nbCV){
-  
-  
-  lfolds = samplingDataNgroup(dtrain, nbCV)
-  lmodel = list()
-  lMCCbest = NULL
-  
-  k = 1
-  kmax = length(lfolds)
-  while(k <= kmax){
-    dtrain = NULL
-    dtest = NULL
-    for (m in seq(1:kmax)){
-      lcpd = rownames(lfolds[[m]])
-      if (m == k){
-        dtest = as.data.frame(lfolds[[m]])
-      }else{
-        dtrain = rbind(dtrain, lfolds[[m]])
-      }
-    }
-    
-    #dtrain = as.data.frame(scale(dtrain))
-    ddestrain = dtrain[,-c(which(colnames(dtrain) == "Aff"))]
-    #ddestrain = scale(ddestrain)
-    Aff = dtrain[,c("Aff")]
-    dtrain$Aff = as.factor(dtrain$Aff)
-    
-    
-    #dtest = as.data.frame(scale(dtest))
-    dtestAff = dtest[,"Aff"]
-    #ddesctest = dtest[,-c(which(colnames(dtest) == "Aff"))]
-    #ddesctest = scale(ddesctest, center = attr(ddestrain, 'scaled:center'), scale = attr(ddestrain, 'scaled:scale'))
-    
-    modelsvm = tryCatch(tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost, type="nu-classification", kernel=ksvm), tunecontrol = tune.control(sampling = "fix")),
-                       error = function(e) {return("NA")})
-    
-    
-    if(is.character(modelsvm)){
-      modelsvm = tune(svm, Aff~., data = dtrain, ranges = list(gamma = vgamma, cost = vcost, type="C-classification", kernel=ksvm), tunecontrol = tune.control(sampling = "fix"))
-    }
-    
-    modelsvm = modelsvm$best.model
-    vpred = predict(modelsvm, dtest, decision.values = TRUE)
-    
-    vpred = as.double(vpred)
-    vpred[which(vpred == 1 )] = 0
-    vpred[which(vpred == 2 )] = 1
-    
-    
-    lpreftest = classPerf(dtestAff, vpred)
-    acctest = lpreftest[[1]]
-    setest = lpreftest[[2]]
-    sptest = lpreftest[[3]]
-    mcctest = lpreftest[[4]]
-    
-    # optimize with MCC
-    lMCCbest = append(lMCCbest, mcctest)
-    lmodel[[k]] =  modelsvm
-    k = k + 1 
-  }
-  #print(lMCCbest)
-  #print(which(lMCCbest == max(lMCCbest, na.rm = TRUE)))
-  return(lmodel[[which(lMCCbest == max(lMCCbest, na.rm = TRUE))]])
-}  
 
 
 
@@ -274,12 +219,12 @@ NNClassTrainTest = function(dtrain, dtest, vsize, vdecay, prout){
   predNNtest = predict(modelNN, dtest[,-c(which(colnames(dtest) == "Aff"))])
   predNNtrain = predict(modelNN, dtrain[,-c(which(colnames(dtrain) == "Aff"))])
   
+  ###### PROB INTEGRATE IN PERFORMANCE
   #fix proba => error
-  
-  predNNtrain[which(predNNtrain < 0.5)] = 0
-  predNNtrain[which(predNNtrain >= 0.5)] = 1
-  predNNtest[which(predNNtest < 0.5)] = 0
-  predNNtest[which(predNNtest >= 0.5)] = 1
+  #predNNtrain[which(predNNtrain < 0.5)] = 0
+  #predNNtrain[which(predNNtrain >= 0.5)] = 1
+  #predNNtest[which(predNNtest < 0.5)] = 0
+  #predNNtest[which(predNNtest >= 0.5)] = 1
   
   names(predNNtrain) = rownames(dtrain)
   names(predNNtest) = rownames(dtest)
@@ -287,6 +232,7 @@ NNClassTrainTest = function(dtrain, dtest, vsize, vdecay, prout){
   # performances = train
   dpredtrain = cbind(dtrain[,"Aff"], as.character(predNNtrain))
   colnames(dpredtrain) = c("Real", "Predict")
+  rownames(dpredtrain) = rownames(dtrain)
   write.csv(dpredtrain, paste(prout, "TrainPred.csv", sep = ""))
   
   lpreftrain = classPerf(dpredtrain[,1], dpredtrain[,2])
@@ -294,10 +240,13 @@ NNClassTrainTest = function(dtrain, dtest, vsize, vdecay, prout){
   setrain = lpreftrain[[2]]
   sptrain = lpreftrain[[3]]
   mcctrain = lpreftrain[[4]]
+  auctrain = lpreftrain[[5]]
+  bacctrain = lpreftrain[[6]]
   
   # performances = test
   dpredtest = cbind(dtest[,"Aff"], as.character(predNNtest))
   colnames(dpredtest) = c("Real", "Predict")
+  rownames(dpredtest) = rownames(dtest)
   write.csv(dpredtest, paste(prout, "TestPred.csv", sep = ""))
   
   lpreftest = classPerf(dtest[,"Aff"], predNNtest)
@@ -305,6 +254,8 @@ NNClassTrainTest = function(dtrain, dtest, vsize, vdecay, prout){
   setest = lpreftest[[2]]
   sptest = lpreftest[[3]]
   mcctest = lpreftest[[4]]
+  auctest = lpreftest[[5]]
+  bacctest = lpreftest[[6]]
   
   print("===== NN model train-Test =====")
   #print(modelpls$coefficients)
@@ -313,6 +264,8 @@ NNClassTrainTest = function(dtrain, dtest, vsize, vdecay, prout){
   print(paste("Se train=", setrain))
   print(paste("Sp train=", sptrain))
   print(paste("MCC train=", mcctrain))
+  print(paste("AUC train=", auctrain))
+  print(paste("bACC train=", bacctrain))
   print("")
   print("")
   
@@ -322,15 +275,17 @@ NNClassTrainTest = function(dtrain, dtest, vsize, vdecay, prout){
   print(paste("Se test=", setest))
   print(paste("Sp test=", sptest))
   print(paste("MCC test=", mcctest))
+  print(paste("AUC test=", auctest))
+  print(paste("bACC test=", bacctest))
   print("")
   print("")
   
   
-  perftrain = c(acctrain, setrain, sptrain, mcctrain)
-  names(perftrain) = c("ACC", "SE", "SP", "MCC")
+  perftrain = c(acctrain, bacctrain, setrain, sptrain, mcctrain, auctrain)
+  names(perftrain) = c("Acc", "b-Acc", "Se", "Sp", "MCC", "AUC")
   
-  perftest = c(acctest, setest, sptest, mcctest)
-  names(perftest) = c("ACC", "SE", "SP", "MCC")
+  perftest = c(acctest, bacctest, setest, sptest, mcctest, auctest)
+  names(perftest) = c("Acc", "b-Acc", "Se", "Sp", "MCC", "AUC")
   
   outmodel = list()
   outmodel$train = perftrain
@@ -379,8 +334,6 @@ NNClassCV = function(lgroupCV, vsize, vdecay, prout){
     #vpred = as.double(vpred)
     
     y_proba = append(y_proba, vpred)
-    vpred[which(vpred >= 0.5)] = 1
-    vpred[which(vpred <= 0.5)] = 0
     
     y_predict = append(y_predict, vpred)
     y_real = append(y_real, dtest[,"Aff"])
@@ -393,6 +346,8 @@ NNClassCV = function(lgroupCV, vsize, vdecay, prout){
   se = lpref[[2]]
   sp = lpref[[3]]
   mcc = lpref[[4]]
+  auc_out = lpref[[5]]
+  bacc = lpref[[6]]
   
   dpred = cbind(y_proba, y_real)
   colnames(dpred) = c("Predict", "Real")
@@ -400,15 +355,17 @@ NNClassCV = function(lgroupCV, vsize, vdecay, prout){
   
   print("Perfomances in CV")
   print(paste("acc=", acc, sep = ""))
+  print(paste("bacc=", bacc, sep = ""))
   print(paste("se=", se, sep = ""))
   print(paste("sp=", sp, sep = ""))
-  print(paste("mcc=", mcc, sep = "")) 
+  print(paste("mcc=", mcc, sep = ""))
+  print(paste("auc=", auc_out, sep = ""))
   print("")
   print("")
   
   outmodelCV = list()
-  lscore = c(acc, se, sp, mcc)
-  names(lscore) = c("ACC", "SE", "SP", "MCC")
+  lscore = c(acc, bacc, se, sp, mcc, auc_out)
+  names(lscore) = c("Acc", "b-Acc", "Se", "Sp", "MCC", "AUC")
   outmodelCV$CV = lscore
   save(outmodelCV, file = pmodel)
   return(outmodelCV)  
@@ -544,8 +501,8 @@ RFGridClassCV = function(lntree, lmtry, lfolds, prout){
         
         modelRF = randomForest( Aff~., data = dtrain, mtry=mtry, ntree = ntree, type = "class",  importance=TRUE)
         vpred = predict (modelRF, dtest)
-        vpred[which(vpred < 0.5)] = 0
-        vpred[which(vpred >= 0.5)] = 1
+        #vpred[which(vpred < 0.5)] = 0
+        #vpred[which(vpred >= 0.5)] = 1
         
         y_predict = append(y_predict, vpred)
         y_real = append(y_real, dtest[,"Aff"])
@@ -686,7 +643,6 @@ RFClassCV = function(lfolds, ntree, mtry, prout){
   return(outmodelCV)
 }
 
-
 RFClassTrainTest = function (dtrain, dtest, ntree, mtry, prout){
   
   pmodel = paste(prout, "model.RData", sep = "")
@@ -703,10 +659,10 @@ RFClassTrainTest = function (dtrain, dtest, ntree, mtry, prout){
   vpredtrainprob = vpredtrain
   vpredtestprob = vpredtest
   
-  vpredtest[which(vpredtest < 0.5)] = 0
-  vpredtest[which(vpredtest >= 0.5)] = 1
-  vpredtrain[which(vpredtrain < 0.5)] = 0
-  vpredtrain[which(vpredtrain >= 0.5)] = 1
+  #vpredtest[which(vpredtest < 0.5)] = 0
+  #vpredtest[which(vpredtest >= 0.5)] = 1
+  #vpredtrain[which(vpredtrain < 0.5)] = 0
+  #vpredtrain[which(vpredtrain >= 0.5)] = 1
   
   
   vperftrain = classPerf(dtrain[,c("Aff")], vpredtrain)
@@ -714,12 +670,16 @@ RFClassTrainTest = function (dtrain, dtest, ntree, mtry, prout){
   setrain = vperftrain[2]
   sptrain = vperftrain[3]
   mcctrain = vperftrain[4]
+  auctrain = vperftrain[5]
+  bacctrain = vperftrain[6]
   
   vperftest = classPerf(dtest[,c("Aff")], vpredtest)
   acctest = vperftest[1]
   setest = vperftest[2]
   sptest = vperftest[3]
   mcctest = vperftest[4]
+  acutest = vperftest[5]
+  bacctest = vperftest[6]
   
   
   print("===Perf RF===")
@@ -731,6 +691,8 @@ RFClassTrainTest = function (dtrain, dtest, ntree, mtry, prout){
   print(paste("se=", vperftrain[[2]], sep = ""))
   print(paste("sp=", vperftrain[[3]], sep = ""))
   print(paste("mcc=", vperftrain[[4]], sep = ""))
+  print(paste("auc=", vperftrain[[5]], sep = ""))
+  print(paste("bacc=", vperftrain[[6]], sep = ""))
   
   
   print("==Test==")
@@ -738,6 +700,7 @@ RFClassTrainTest = function (dtrain, dtest, ntree, mtry, prout){
   print(paste("se=", vperftest[[2]], sep = ""))
   print(paste("sp=", vperftest[[3]], sep = ""))
   print(paste("mcc=", vperftest[[4]], sep = ""))
+  
   print("")
   print("")
   
@@ -818,8 +781,6 @@ CARTClassCV = function(lfolds, prout){
     vpred = predict(modelCART, dtest)
     vpred = vpred[,2]
     vproba = vpred
-    vpred[which(vpred < 0.5)] = 0
-    vpred[which(vpred >= 0.5)] = 1
     
     plotcp(modelCART)
     # plot tree in pdf
@@ -841,10 +802,12 @@ CARTClassCV = function(lfolds, prout){
   se = lpref[[2]]
   sp = lpref[[3]]
   mcc = lpref[[4]]
+  auc_out = lpref[[5]]
+  bacc = lpref[[6]]
   
   outmodelCV = list()
-  lscore = c(acc, se, sp, mcc)
-  names(lscore) = c("Acc", "Se", "Sp", "MCC")
+  lscore = c(acc, bacc, se, sp, mcc, auc_out)
+  names(lscore) = c("Acc", "b-Acc", "Se", "Sp", "MCC", "AUC")
   outmodelCV$CV = lscore
   
   png(paste(prout, "PerfCARTClassCV", length(lfolds), ".png", sep = ""), 800, 800)
@@ -859,17 +822,17 @@ CARTClassCV = function(lfolds, prout){
   
   print("Perfomances in CV")
   print(paste("acc=", acc, sep = ""))
+  print(paste("bacc=", bacc, sep = ""))
   print(paste("se=", se, sep = ""))
   print(paste("sp=", sp, sep = ""))
   print(paste("mcc=", mcc, sep = ""))
+  print(paste("auc=", auc_out, sep = ""))
   print("")
   print("")
   
   save(outmodelCV, file = paste(prout, "modelCV.RData", sep = ""))
   return(outmodelCV)
 }
-
-
 
 CARTclass = function (dtrain, dtest, prout){
   
@@ -916,12 +879,6 @@ CARTclass = function (dtrain, dtest, prout){
   drawROCCurve(vrealtest, vprobatest, paste(prout, "ROCcurvetest", sep = ""))
   
   
-  # format pred
-  vprobatrain[which(vprobatrain < 0.5)] = 0
-  vprobatrain[which(vprobatrain >= 0.5)] = 1
-  vprobatest[which(vprobatest < 0.5)] = 0
-  vprobatest[which(vprobatest >= 0.5)] = 1
-  
   # performances
   lpreftrain = classPerf(vrealtrain, vprobatrain)
   lpreftest = classPerf(vrealtest, vprobatest)
@@ -929,25 +886,29 @@ CARTclass = function (dtrain, dtest, prout){
   print("==Perfomances in train/test==")
   print("===Perfomances in train===")
   print(paste("acc=", lpreftrain[[1]], sep = ""))
+  print(paste("bacc=", lpreftrain[[6]], sep = ""))
   print(paste("se=", lpreftrain[[2]], sep = ""))
   print(paste("sp=", lpreftrain[[3]], sep = ""))
   print(paste("mcc=", lpreftrain[[4]], sep = ""))
+  print(paste("auc=", lpreftrain[[5]], sep = ""))
   print("")
   print("===Perfomances in test===")
   print(paste("acc=", lpreftest[[1]], sep = ""))
+  print(paste("bacc=", lpreftest[[6]], sep = ""))
   print(paste("se=", lpreftest[[2]], sep = ""))
   print(paste("sp=", lpreftest[[3]], sep = ""))
   print(paste("mcc=", lpreftest[[4]], sep = ""))
+  print(paste("auc=", lpreftest[[4]], sep = ""))
   print("")
   print("")
   
   outmodel = list()
-  ltrain = c(lpreftrain[[1]],  lpreftrain[[2]],  lpreftrain[[3]],  lpreftrain[[4]])
-  names(ltrain) = c("Acc", "Se", "Sp", "MCC")
+  ltrain = c(lpreftrain[[1]], lpreftrain[[6]],  lpreftrain[[2]],  lpreftrain[[3]],  lpreftrain[[4]], lpreftrain[[5]])
+  names(ltrain) = c("Acc", "b-Acc", "Se", "Sp", "MCC", "AUC")
   outmodel$train = ltrain
   
-  ltest = c(lpreftest[[1]], lpreftest[[2]], lpreftest[[3]], lpreftest[[4]])
-  names(ltest) = c("Acc", "Se", "Sp", "MCC")
+  ltest = c(lpreftest[[1]], lpreftest[[6]], lpreftest[[2]], lpreftest[[3]], lpreftest[[4]], lpreftest[[5]])
+  names(ltest) = c("Acc", "b-Acc", "Se", "Sp", "MCC", "AUC")
   outmodel$test = ltest
   outmodel$model = modelCART
   
@@ -997,8 +958,6 @@ LDAClassCV = function(lfolds, prout){
     vpred = predict (modelLDA, dtest)
     vproba = vpred$posterior[,2]
     vpred = vproba
-    vpred[which(vpred < 0.5)] = 0
-    vpred[which(vpred >= 0.5)] = 1
     
     y_predict = append(y_predict, vpred)
     y_proba = append(y_proba, vproba)
@@ -1009,9 +968,11 @@ LDAClassCV = function(lfolds, prout){
   # performances
   lpref = classPerf(y_real, y_predict)
   acc = lpref[[1]]
+  bacc = lpref[[6]]
   se = lpref[[2]]
   sp = lpref[[3]]
   mcc = lpref[[4]]
+  auc_out = lpref[[5]]
   
   png(paste(prout, "PerfLDAClassCV", length(lfolds), ".png", sep = ""), 800, 800)
   plot(y_real, y_proba, type = "n")
@@ -1025,15 +986,17 @@ LDAClassCV = function(lfolds, prout){
   
   print("Perfomances in CV")
   print(paste("acc=", acc, sep = ""))
+  print(paste("bacc=", bacc, sep = ""))
   print(paste("se=", se, sep = ""))
   print(paste("sp=", sp, sep = ""))
   print(paste("mcc=", mcc, sep = ""))
+  print(paste("auc=", auc_out, sep = ""))
   print("")
   print("")
   
   outmodelCV = list()
-  lscore = c(acc, se, sp, mcc)
-  names(lscore) = c("ACC", "SE", "SP", "MCC")
+  lscore = c(acc, bacc, se, sp, mcc, auc_out)
+  names(lscore) = c("Acc", "b-Acc", "Se", "Sp", "MCC", "AUC")
   outmodelCV$CV = lscore
   
   save(outmodelCV, file = pmodel)
@@ -1061,23 +1024,23 @@ LDAClassTrainTest = function (dtrain, dtest, prout){#, name_barplot, draw_plot, 
   vpredtrain = vpredtrainprob
   vpredtest = vpredtestprob 
 
-  vpredtest[which(vpredtest < 0.5)] = 0
-  vpredtest[which(vpredtest >= 0.5)] = 1
-  vpredtrain[which(vpredtrain < 0.5)] = 0
-  vpredtrain[which(vpredtrain >= 0.5)] = 1
-
 
   vperftrain = classPerf(dtrain[,c("Aff")], vpredtrain)
   acctrain = vperftrain[1]
   setrain = vperftrain[2]
   sptrain = vperftrain[3]
   mcctrain = vperftrain[4]
+  auctrain = vperftrain[5]
+  bacctrain = vperftrain[6]
+  
 
   vperftest = classPerf(dtest[,c("Aff")], vpredtest)
   acctest = vperftest[1]
   setest = vperftest[2]
   sptest = vperftest[3]
   mcctest = vperftest[4]
+  auctest = vperftest[5]
+  bacctest = vperftest[6]
 
   
   print("===Perf LDA===")
@@ -1086,24 +1049,28 @@ LDAClassTrainTest = function (dtrain, dtest, prout){#, name_barplot, draw_plot, 
   
   print("==Train==")
   print(paste("acc=", vperftrain[[1]], sep = ""))
+  print(paste("bacc=", vperftrain[[6]], sep = ""))
   print(paste("se=", vperftrain[[2]], sep = ""))
   print(paste("sp=", vperftrain[[3]], sep = ""))
   print(paste("mcc=", vperftrain[[4]], sep = ""))
+  print(paste("mcc=", vperftrain[[5]], sep = ""))
   
   
   print("==Test==")
   print(paste("acc=", vperftest[[1]], sep = ""))
+  print(paste("bacc=", vperftest[[6]], sep = ""))
   print(paste("se=", vperftest[[2]], sep = ""))
   print(paste("sp=", vperftest[[3]], sep = ""))
   print(paste("mcc=", vperftest[[4]], sep = ""))
+  print(paste("auc=", vperftest[[5]], sep = ""))
   print("")
   print("")
   
-  perftrain = c(acctrain, setrain, sptrain, mcctrain)
-  names(perftrain) = c("ACC", "SE", "SP", "MCC")
+  perftrain = c(acctrain, bacctrain, setrain, sptrain, mcctrain, auctrain)
+  names(perftrain) = c("Acc", "b-Acc", "Se", "Sp", "MCC", "AUC")
   
-  perftest = c(acctest, setest, sptest, mcctest)
-  names(perftest) = c("ACC", "SE", "SP", "MCC")
+  perftest = c(acctest, bacctest, setest, sptest, mcctest, auctest)
+  names(perftest) = c("Acc", "b-Acc", "Se", "Sp", "MCC", "AUC")
   
   outmodel = list()
   outmodel$train = perftrain

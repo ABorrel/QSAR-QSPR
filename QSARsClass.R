@@ -18,7 +18,14 @@ nbCV = as.integer(args[5])
 
 
 #./QSARsClass.R /mnt/c/Users/aborr/research/ILS/HERG/results/NCAST/QSAR_NCAST__0.9-90-5-10-0.15-0.3/sampleTraningSet/test.csv 0 /mnt/c/Users/aborr/research/ILS/HERG/results/NCAST/QSAR_NCAST__0.9-90-5-10-0.15-0.3/sampleTraningSet/1/ 10 > /mnt/c/Users/aborr/research/ILS/HERG/results/NCAST/QSAR_NCAST__0.9-90-5-10-0.15-0.3/sampleTraningSet/1/perf.txt
+#./QSARsClass.R /mnt/c/Users/AlexandreBorrel/research/SSI/e2up_p4up/results/QSAR_E2_H295R_nosampling_nosingledosecheck_noborderline/rdkit-OPERA-toxprint_0.9-0/classQSAR/1/trainGlobal.csv /mnt/c/Users/AlexandreBorrel/research/SSI/e2up_p4up/results/QSAR_E2_H295R_nosampling_nosingledosecheck_noborderline/rdkit-OPERA-toxprint_0.9-0/classQSAR/1/test.csv 0 /mnt/c/Users/AlexandreBorrel/research/SSI/e2up_p4up/results/QSAR_E2_H295R_nosampling_nosingledosecheck_noborderline/rdkit-OPERA-toxprint_0.9-0/classQSAR/1/ 10
 
+
+#ptrain = "/mnt/c/Users/AlexandreBorrel/research/SSI/e2up_p4up/results/QSAR_E2_H295R_nosampling_nosingledosecheck_noborderline/rdkit-OPERA-toxprint_0.9-0/classQSAR/1/trainGlobal.csv"
+#ptest = "/mnt/c/Users/AlexandreBorrel/research/SSI/e2up_p4up/results/QSAR_E2_H295R_nosampling_nosingledosecheck_noborderline/rdkit-OPERA-toxprint_0.9-0/classQSAR/1/test.csv"
+#pcluster = "0"
+#prout = "/mnt/c/Users/AlexandreBorrel/research/SSI/e2up_p4up/results/QSAR_E2_H295R_nosampling_nosingledosecheck_noborderline/rdkit-OPERA-toxprint_0.9-0/classQSAR/1/"
+#nbCV = 10
 
 #ptrain = "C://Users/aborr/research/ILS/HERG/results/NCAST/QSAR_NCAST__0.9-90-5-10-0.15-0.3/sampleTraningSet/1/train.csv" 
 #ptest = "C://Users/aborr/research/ILS/HERG/results/NCAST/QSAR_NCAST__0.9-90-5-10-0.15-0.3/sampleTraningSet/test.csv" 
@@ -39,8 +46,8 @@ nbCV = as.integer(args[5])
 
 # model classification #
 ########################
-modelSVMclass = 1
-modelRFclass = 1
+modelSVMclass = 0 ### computed in python spedd perf
+modelRFclass = 0 ## computed in python speed perf
 modelLDAclass = 1
 modelCartclass = 1
 modelNNclass = 1
@@ -139,6 +146,7 @@ if(modelSVMclass == 1){
   ksvm = "linear"
   outSVMCV_linear = SVMClassCV(lgroupCV, vgamma, vcost, ksvm, prSVM)
   outSVM_linear = SVMClassTrainTest(dtrain, dtest, vgamma, vcost, ksvm, prSVM)
+  stop()
   
   prSVM = paste(prout, "SVMclass_radial/", sep = "")
   dir.create(prSVM)
@@ -151,7 +159,7 @@ if(modelSVMclass == 1){
   ksvm = "sigmoid"
   outSVMCV_sigmoid = SVMClassCV(lgroupCV, vgamma, vcost, ksvm, prSVM)
   outSVM_sigmoid = SVMClassTrainTest(dtrain, dtest, vgamma, vcost, ksvm, prSVM)
-  
+  stop()
 }
 
 
@@ -251,9 +259,9 @@ rownames(perfTest) = rownameTable
 rownames(perftrain) = rownameTable
 rownames(perfCV) = rownameTable
 
-colnames(perfTest) = c("Acc", "Se", "Sp", "MCC")
-colnames(perftrain) = c("Acc", "Se", "Sp", "MCC")
-colnames(perfCV) = c("Acc", "Se", "Sp", "MCC")
+colnames(perfTest) = c("Acc", "b-Acc", "Se", "Sp", "MCC", "AUC")
+colnames(perftrain) = c("Acc", "b-Acc", "Se", "Sp", "MCC", "AUC")
+colnames(perfCV) = c("Acc", "b-Acc", "Se", "Sp", "MCC", "AUC")
 
 write.csv(perfTest, file = paste(prout, "perfTest.csv", sep = ""))
 write.csv(perftrain, file = paste(prout, "perfTrain.csv", sep = ""))

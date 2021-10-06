@@ -1,5 +1,5 @@
 library(ggplot2)
-
+library(Metrics)
 
 #####################
 # Perf for classes  #
@@ -33,6 +33,10 @@ drawROCCurve = function(vreal, vpred, pout){
 
 # change case of d or nd
 perftable = function (list_predict, list_real, verbose = 0){
+  
+  # transform here prob in 1 or 0
+  list_predict[which(list_predict < 0.5)] = 0
+  list_predict[which(list_predict >= 0.5)] = 1
   
   nb_value = length (list_real)
   i = 1
@@ -179,8 +183,10 @@ classPerf = function (v_real, v_predict){
   se = sensibility(rate[1], rate[4])
   sp = sensibility(rate[2], rate[3])
   mcc = MCC(rate[1], rate[2], rate[3], rate[4])
+  auc_out = auc(v_real, v_predict)
+  b_acc = (se+sp)/2
   
-  return (list (acc, se, sp, mcc))
+  return (list(acc, se, sp, mcc, auc_out, b_acc))
   
 }
 
