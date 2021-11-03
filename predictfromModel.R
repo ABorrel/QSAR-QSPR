@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
-library (randomForest)
-library (MASS)
+library(randomForest)
+library(MASS)
 library(rpart)
 library(rpart.plot)
 library(e1071)
@@ -42,7 +42,17 @@ pout = args[4]
 load(pmodel)
 model = outmodel$model
 din = read.csv(pdesc, sep = ",", header = TRUE)
+if(dim(din)[2] == 1){
+  din = read.csv(pdesc, sep = "\t", header = TRUE)  
+}
 rownames(din) = din[,1]
+din = din[,-1]
+
+# if not aff in colnames
+if("Aff" %in% colnames(din) == FALSE ){
+  Aff = rep(1, dim(din)[1])
+  din = cbind(din, Aff)
+}
 
 
 if(ML == "RFclass"){
@@ -54,6 +64,10 @@ if(ML == "RFclass"){
 }else if(ML == "LDAclass"){
   lpred = predict(model, din)
   dout = cbind(lpred$posterior[,2], din$Aff)
+}else if(ML == "NNclass"){
+  lpred = predict(model, din[,-c(which(colnames(din) == "Aff"))])
+  lpred = as.double(as.character(lpred))
+  dout = cbind(lpred, din$Aff) 
 }else if(ML == "SVMclass"){
   lpred = predict(model, din)
   lpred = as.vector(lpred)
