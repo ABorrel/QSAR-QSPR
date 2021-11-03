@@ -39,10 +39,10 @@ d_chem = d_chem[l_casrn,]
 # disimilarity
 d_sim = 1-d_sim
 
-l_set = rep("Train Act", dim(d_chem)[1])
-l_set[which(d_chem$Aff == 0 & d_chem$set=="train")] = "Train Inact"
-l_set[which(d_chem$Aff == 0 & d_chem$set=="test")] = "Test Inact"
-l_set[which(d_chem$Aff == 1 & d_chem$set=="test")] = "Test Act"
+l_set = rep("Train Active", dim(d_chem)[1])
+l_set[which(d_chem$Aff == 0 & d_chem$set=="train")] = "Train Inactive"
+l_set[which(d_chem$Aff == 0 & d_chem$set=="test")] = "Test Inactive"
+l_set[which(d_chem$Aff == 1 & d_chem$set=="test")] = "Test Active"
 
 l_color = rep("#8dbfe4", dim(d_chem)[1])
 l_color[which(d_chem$Aff == 0 & d_chem$set=="train")] = "#6475e8"
@@ -67,7 +67,7 @@ ggsave(paste(pr_out, "CP_similarity_text.png", sep = ""),  width = 8, height = 6
 
 cmd_plot<- ggplot(fit_MDS, aes(x=Dim1, y=Dim2)) +
   geom_point(aes(colour=Set, label = rownames(fit_MDS)),  size=2) +
-  scale_colour_manual(name = "Set", values = c("Train Active" = "#8dbfe4", "Train Inactive" = "#6475e8", "Test" = "#f378b5", "Test" = "#a62a9a"))  
+  scale_colour_manual(name = "Set", values = c("Train Active" = "#8dbfe4", "Train Inactive" = "#6475e8", "Test Active" = "#f378b5", "Test Inactive" = "#a62a9a"))  
 ggsave(paste(pr_out, "CP_similarity_point.png", sep = ""),  width = 8, height = 6, dpi = 300, bg="transparent")
 
 # mosaic plot
